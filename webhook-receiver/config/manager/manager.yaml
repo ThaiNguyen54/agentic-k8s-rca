@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: webhook-receiver-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller-manager
+  namespace: webhook-receiver-system
+  labels:
+    control-plane: controller-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  template:
+    metadata:
+      labels:
+        control-plane: controller-manager
+    spec:
+      containers:
+      - name: manager
+        image: controller:latest
+        ports:
+        - containerPort: 9093
+          name: webhook
+        env:
+        - name: KAGENT_URL
+          value: "http://kagent-controller.kagent.svc.cluster.local:8083"
+        - name: RCA_AGENT_NAME
+          value: "k8s-agent"
+        - name: RCA_AGENT_NAMESPACE
+          value: "kagent"
+        - name: PORT
+          value: "9093"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 9093
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 9093
+          initialDelaySeconds: 3
+          periodSeconds: 5
+      serviceAccountName: controller-manager
+      terminationGracePeriodSeconds: 10

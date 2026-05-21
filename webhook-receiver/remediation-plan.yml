@@ -1,0 +1,42 @@
+apiVersion: rca.system/v1
+kind: RemediationPlan
+metadata:
+  name: remediation-incident-1042
+spec:
+  incidentRef: incident-1042
+  hypothesisRef: hyp-3
+  validatedCause: "payment-service rollout caused readiness failures"
+  target:
+    cluster: workload-cluster-a
+    namespace: payment
+    workload: payment-service
+    component: deployment/payment-service
+  strategy: rollback
+  actions:
+    - step: 1
+      type: git-revert
+      target: workload-cluster-repo
+      value: "revert commit abc123"
+    - step: 2
+      type: rollout-restart
+      target: deployment/payment-service
+    - step: 3
+      type: health-check
+      target: service/payment-service
+  executionMode: GitOps
+  safetyChecks:
+    - "confirm target namespace exists"
+    - "confirm standby version is healthy"
+    - "abort if error rate increases for 5m"
+  rollbackPlan:
+    trigger: "if remediation fails or latency worsens"
+    action: "restore previous stable manifest"
+  successCriteria:
+    - "pod readiness = healthy"
+    - "error rate < threshold"
+    - "p95 latency back to baseline"
+  approvalPolicy: human-in-the-loop
+status:
+  phase: PendingApproval
+  conditions: []
+  executionResult: null

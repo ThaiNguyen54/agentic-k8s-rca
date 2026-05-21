@@ -1,0 +1,10 @@
+namespace: webhook-receiver-system
+
+namePrefix: webhook-receiver-
+
+resources:
+- ../rbac
+- ../manager
+
+patches:
+- path: manager_resource_patch.yaml
