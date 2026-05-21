@@ -49,7 +49,12 @@ func main() {
 		os.Getenv("RCA_AGENT_NAME"),
 	)
 
-	webhookHandler := handler.NewWebhookHandler(rcaClient, scm)
+	validatorClient := kagent.NewClient(
+		os.Getenv("VALIDATOR_AGENT_URL"),
+		os.Getenv("VALIDATOR_AGENT_NAME"),
+	)
+
+	webhookHandler := handler.NewWebhookHandler(rcaClient, validatorClient, scm)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/webhook/fault", webhookHandler.HandleFault)
@@ -61,32 +66,8 @@ func main() {
 	log.Printf("[webhook-receiver] listening on :%s", port)
 	log.Printf("[webhook-receiver] RCA_AGENT_URL=%s", os.Getenv("RCA_AGENT_URL"))
 	log.Printf("[webhook-receiver] RCA_AGENT_NAME=%s", os.Getenv("RCA_AGENT_NAME"))
+	log.Printf("[webhook-receiver] VALIDATOR_AGENT_URL=%s", os.Getenv("VALIDATOR_AGENT_URL"))
+	log.Printf("[webhook-receiver] VALIDATOR_AGENT_NAME=%s", os.Getenv("VALIDATOR_AGENT_NAME"))
 
 	log.Fatal(http.ListenAndServe(":"+port, loggingMiddleware(mux)))
 }
-
-// package main
-
-// import (
-// 	"log"
-// 	"net/http"
-// 	"os"
-
-// 	"github.com/ThaiNguyen54/webhook-receiver/internal/handler"
-// )
-
-// func main() {
-// 	port := os.Getenv("PORT")
-// 	if port == "" {
-// 		port = "9093"
-// 	}
-
-// 	mux := http.NewServeMux()
-// 	mux.HandleFunc("/webhook/fault", handler.HandleFaultWebhook)
-// 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-// 		w.WriteHeader(http.StatusOK)
-// 	})
-
-// 	log.Printf("[webhook-receiver] listening on :%s", port)
-// 	log.Fatal(http.ListenAndServe(":"+port, mux))
-// }

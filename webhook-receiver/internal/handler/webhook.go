@@ -1,14 +1,14 @@
-// internal/handler/webhook.go
 package handler
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
-	"time"
+	"strings"
 
 	"github.com/ThaiNguyen54/webhook-receiver/internal/kagent"
 	"github.com/ThaiNguyen54/webhook-receiver/internal/prompt"
@@ -16,18 +16,23 @@ import (
 )
 
 type WebhookHandler struct {
-	rcaClient kagent.Client
-	scm       systemcontext.Manager
+	rcaClient       kagent.Client
+	validatorClient kagent.Client
+	scm             systemcontext.Manager
 }
 
-func NewWebhookHandler(rcaClient kagent.Client, scm systemcontext.Manager) *WebhookHandler {
+func NewWebhookHandler(
+	rcaClient kagent.Client,
+	validatorClient kagent.Client,
+	scm systemcontext.Manager,
+) *WebhookHandler {
 	return &WebhookHandler{
-		rcaClient: rcaClient,
-		scm:       scm,
+		rcaClient:       rcaClient,
+		validatorClient: validatorClient,
+		scm:             scm,
 	}
 }
 
-// Old direct payload shape
 type FaultWebhookRequest struct {
 	Labels      map[string]string `json:"labels"`
 	Annotations map[string]string `json:"annotations"`
@@ -35,19 +40,13 @@ type FaultWebhookRequest struct {
 	IncidentID  string            `json:"incidentId"`
 }
 
-// Alertmanager-style payload shape
-type AlertmanagerWebhookRequest struct {
-	Status   string              `json:"status"`
-	Version  string              `json:"version"`
-	GroupKey string              `json:"groupKey"`
-	Alerts   []AlertmanagerAlert `json:"alerts"`
+type RCAOrchestratorOutput struct {
+	HumanResponse   string                 `json:"humanResponse"`
+	ValidatorPacket kagent.ValidatorPacket `json:"validatorPacket"`
 }
 
-type AlertmanagerAlert struct {
-	Status      string            `json:"status"`
-	Labels      map[string]string `json:"labels"`
-	Annotations map[string]string `json:"annotations"`
-	StartsAt    string            `json:"startsAt"`
+type promptValidationClient interface {
+	TriggerValidationPrompt(ctx context.Context, prompt string) (map[string]any, error)
 }
 
 func (h *WebhookHandler) HandleFault(w http.ResponseWriter, r *http.Request) {
@@ -183,29 +182,59 @@ func (h *WebhookHandler) HandleFault(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rcaPrompt := prompt.BuildPrompt(labels, annotations, startsAt, ctxData)
-	log.Printf("[webhook] built prompt len=%d", len(rcaPrompt))
-	log.Printf("[webhook] prompt begin\n%s\n[webhook] prompt end", rcaPrompt)
+	basePrompt := prompt.BuildPrompt(labels, annotations, startsAt, ctxData)
+	rcaPrompt := buildRCAPrompt(basePrompt)
 
-	log.Printf("[webhook] calling RCA client")
+	log.Printf("[webhook] built RCA prompt len=%d", len(rcaPrompt))
+	log.Printf("[webhook] RCA prompt begin\n%s\n[webhook] RCA prompt end", rcaPrompt)
 
-	rcaCtx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
-	defer cancel()
-
-	result, err := h.rcaClient.TriggerRCA(rcaCtx, rcaPrompt)
+	rcaRaw, err := h.rcaClient.TriggerRCA(context.Background(), rcaPrompt)
 	if err != nil {
 		log.Printf("[webhook] TriggerRCA failed: %v", err)
 		http.Error(w, "failed to trigger RCA agent: "+err.Error(), http.StatusBadGateway)
 		return
 	}
 
-	log.Printf("[webhook] RCA success for incidentId=%s", incidentID)
+	rcaOutput, err := extractRCAOrchestratorOutput(rcaRaw)
+	if err != nil {
+		log.Printf("[webhook] failed to extract RCA output: %v", err)
+		http.Error(w, "failed to parse RCA output: "+err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	log.Printf("[webhook] extracted RCA humanResponse=%q hypothesis=%q confidence=%f safeToFailover=%t",
+		rcaOutput.HumanResponse,
+		rcaOutput.ValidatorPacket.Hypothesis,
+		rcaOutput.ValidatorPacket.Confidence,
+		rcaOutput.ValidatorPacket.SafeToFailover,
+	)
+
+	validatorPrompt := buildValidatorPrompt(rcaOutput.ValidatorPacket)
+	log.Printf("[webhook] built validator prompt len=%d", len(validatorPrompt))
+	log.Printf("[webhook] validator prompt begin\n%s\n[webhook] validator prompt end", validatorPrompt)
+
+	validationRaw, err := h.callValidator(context.Background(), validatorPrompt, rcaOutput.ValidatorPacket)
+	if err != nil {
+		log.Printf("[webhook] TriggerValidation failed: %v", err)
+		http.Error(w, "failed to trigger validator agent: "+err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	log.Printf("[webhook] validation success for incidentId=%s", incidentID)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(map[string]any{
 		"ok":         true,
 		"incidentId": incidentID,
-		"result":     result,
+		"rca": map[string]any{
+			"humanResponse":   rcaOutput.HumanResponse,
+			"validatorPacket": rcaOutput.ValidatorPacket,
+			"raw":             rcaRaw,
+		},
+		"validation": map[string]any{
+			"prompt": validatorPrompt,
+			"raw":    validationRaw,
+		},
 	}); err != nil {
 		log.Printf("[webhook] failed to encode response: %v", err)
 		return
@@ -214,113 +243,217 @@ func (h *WebhookHandler) HandleFault(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[webhook] response written successfully")
 }
 
-// ####################################################
+func (h *WebhookHandler) callValidator(
+	ctx context.Context,
+	validatorPrompt string,
+	packet kagent.ValidatorPacket,
+) (map[string]any, error) {
+	log.Printf("[webhook] entering callValidator")
 
-// package handler
+	if c, ok := h.validatorClient.(promptValidationClient); ok {
+		log.Printf("[webhook] validator client supports explicit prompt dispatch")
+		return c.TriggerValidationPrompt(ctx, validatorPrompt)
+	}
 
-// import (
-// 	"encoding/json"
-// 	"log"
-// 	"net/http"
+	log.Printf("[webhook] validator client does not support explicit prompt dispatch; falling back to TriggerValidation(packet)")
+	return h.validatorClient.TriggerValidation(ctx, packet)
+}
 
-// 	"github.com/ThaiNguyen54/webhook-receiver/internal/kagent"
-// 	"github.com/ThaiNguyen54/webhook-receiver/internal/prompt"
-// )
+func buildRCAPrompt(basePrompt string) string {
+	return basePrompt + `
 
-// type AlertmanagerPayload struct {
-// 	Version  string  `json:"version"`
-// 	GroupKey string  `json:"groupKey"`
-// 	Status   string  `json:"status"`
-// 	Alerts   []Alert `json:"alerts"`
-// }
+Return ONLY valid JSON in this exact structure:
+{
+  "humanResponse": "<short human-readable explanation for the operator>",
+  "validatorPacket": {
+    "hypothesis": "<single-sentence hypothesis>",
+    "confidence": 0.0,
+    "evidenceSummary": "<short evidence summary>",
+    "safeToFailover": true
+  }
+}
 
-// type Alert struct {
-// 	Status      string                 `json:"status"`
-// 	Labels      map[string]string      `json:"labels"`
-// 	Annotations map[string]interface{} `json:"annotations"`
-// 	StartsAt    string                 `json:"startsAt"`
-// }
+Rules:
+- Return JSON only.
+- No markdown.
+- No prose outside JSON.
+- confidence must be between 0 and 1.
+- humanResponse must be concise and readable.
+`
+}
 
-// func HandleFaultWebhook(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method != http.MethodPost {
-// 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-// 		return
-// 	}
+func buildValidatorPrompt(packet kagent.ValidatorPacket) string {
+	packetJSON, err := json.MarshalIndent(packet, "", "  ")
+	if err != nil {
+		packetJSON = []byte(`{"error":"failed to marshal validator packet"}`)
+	}
 
-// 	var payload AlertmanagerPayload
-// 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-// 		log.Printf("[ERROR] decode payload: %v", err)
-// 		http.Error(w, "bad request", http.StatusBadRequest)
-// 		return
-// 	}
+	return `You are a Kubernetes remediation validation agent.
 
-// 	w.WriteHeader(http.StatusAccepted)
+Your job is to validate whether the RCA hypothesis is sufficiently supported by the evidence.
 
-// 	go func() {
-// 		for _, alert := range payload.Alerts {
-// 			if alert.Status != "firing" {
-// 				continue
-// 			}
-// 			if shouldSkip(alert) {
-// 				log.Printf("[SKIP] cluster=%s hint=%s ns=%s",
-// 					alert.Labels["cluster"],
-// 					alert.Labels["root_cause_hint"],
-// 					alert.Labels["namespace"],
-// 				)
-// 				continue
-// 			}
+Decision rules:
+- Approve only if the hypothesis is directly supported by the evidence.
+- Reject if the evidence is weak, contradictory, or mixes multiple causes without enough proof.
+- safeToFailover may remain true only if the evidence supports a low-risk failover decision.
 
-// 			log.Printf("[RECEIVED] cluster=%s object=%s hint=%s",
-// 				alert.Labels["cluster"],
-// 				alert.Labels["fault_object"],
-// 				alert.Labels["root_cause_hint"],
-// 			)
+Return ONLY valid JSON in this exact structure:
+{
+  "decision": "approve|reject",
+  "confidence": 0.0,
+  "reason": "<short explanation>",
+  "safeToFailover": true
+}
 
-// 			annotations := normalizeAnnotations(alert.Annotations)
-// 			p := prompt.BuildPrompt(alert.Labels, annotations, alert.StartsAt)
-// 			log.Printf("[PROMPT BUILT]\n%s", p)
+RCA hypothesis packet:
+` + string(packetJSON)
+}
 
-// 			if err := kagent.InvokeRCAAgent(p); err != nil {
-// 				log.Printf("[ERROR] RCA agent: %v", err)
-// 			}
-// 		}
-// 	}()
-// }
+func extractRCAOrchestratorOutput(agentResult map[string]any) (*RCAOrchestratorOutput, error) {
+	text := extractRCAResponseText(agentResult)
+	if strings.TrimSpace(text) == "" {
+		return nil, errors.New("no text found in RCA response")
+	}
 
-// func normalizeAnnotations(in map[string]interface{}) map[string]string {
-// 	out := make(map[string]string, len(in))
-// 	for k, v := range in {
-// 		switch val := v.(type) {
-// 		case string:
-// 			out[k] = val
-// 		default:
-// 			b, err := json.Marshal(val)
-// 			if err != nil {
-// 				out[k] = ""
-// 				continue
-// 			}
-// 			out[k] = string(b)
-// 		}
-// 	}
-// 	return out
-// }
+	jsonText, err := extractFirstJSONObject(text)
+	if err != nil {
+		return nil, fmt.Errorf("no JSON object found in RCA text: %w", err)
+	}
 
-// func shouldSkip(alert Alert) bool {
-// 	hint := alert.Labels["root_cause_hint"]
-// 	ns := alert.Labels["namespace"]
+	var out RCAOrchestratorOutput
+	if err := json.Unmarshal([]byte(jsonText), &out); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal RCA JSON: %w", err)
+	}
 
-// 	if ns == "default" {
-// 		return false
-// 	}
+	if strings.TrimSpace(out.HumanResponse) == "" {
+		return nil, errors.New("missing humanResponse")
+	}
+	if strings.TrimSpace(out.ValidatorPacket.Hypothesis) == "" {
+		return nil, errors.New("missing validatorPacket.hypothesis")
+	}
+	if strings.TrimSpace(out.ValidatorPacket.EvidenceSummary) == "" {
+		return nil, errors.New("missing validatorPacket.evidenceSummary")
+	}
+	if out.ValidatorPacket.Confidence < 0 || out.ValidatorPacket.Confidence > 1 {
+		return nil, errors.New("validatorPacket.confidence must be between 0 and 1")
+	}
 
-// 	skipHints := map[string]bool{
-// 		"high_restart_count": true,
-// 	}
-// 	skipNamespaces := map[string]bool{
-// 		"kube-system":     true,
-// 		"metallb-system":  true,
-// 		"longhorn-system": true,
-// 	}
+	return &out, nil
+}
 
-// 	return skipHints[hint] && skipNamespaces[ns]
-// }
+func extractRCAResponseText(agentResult map[string]any) string {
+	result, ok := agentResult["result"].(map[string]any)
+	if !ok {
+		return extractText(agentResult)
+	}
+
+	artifacts, ok := result["artifacts"].([]any)
+	if !ok {
+		return extractText(agentResult)
+	}
+
+	for _, a := range artifacts {
+		artifact, ok := a.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		parts, ok := artifact["parts"].([]any)
+		if !ok {
+			continue
+		}
+
+		for _, p := range parts {
+			part, ok := p.(map[string]any)
+			if !ok {
+				continue
+			}
+
+			if t, ok := part["text"].(string); ok && strings.TrimSpace(t) != "" {
+				return t
+			}
+		}
+	}
+
+	return extractText(agentResult)
+}
+
+func extractText(v any) string {
+	switch x := v.(type) {
+	case string:
+		return x
+	case map[string]any:
+		keys := []string{
+			"result",
+			"artifacts",
+			"artifact",
+			"message",
+			"parts",
+			"content",
+			"text",
+		}
+		for _, key := range keys {
+			if child, ok := x[key]; ok {
+				if s := extractText(child); s != "" {
+					return s
+				}
+			}
+		}
+	case []any:
+		var b strings.Builder
+		for _, item := range x {
+			if s := extractText(item); s != "" {
+				if b.Len() > 0 {
+					b.WriteString("\n")
+				}
+				b.WriteString(s)
+			}
+		}
+		return b.String()
+	}
+	return ""
+}
+
+func extractFirstJSONObject(s string) (string, error) {
+	start := strings.Index(s, "{")
+	if start == -1 {
+		return "", errors.New("no opening brace found")
+	}
+
+	depth := 0
+	inString := false
+	escape := false
+
+	for i := start; i < len(s); i++ {
+		ch := s[i]
+
+		if inString {
+			if escape {
+				escape = false
+				continue
+			}
+			if ch == '\\' {
+				escape = true
+				continue
+			}
+			if ch == '"' {
+				inString = false
+			}
+			continue
+		}
+
+		switch ch {
+		case '"':
+			inString = true
+		case '{':
+			depth++
+		case '}':
+			depth--
+			if depth == 0 {
+				return s[start : i+1], nil
+			}
+		}
+	}
+
+	return "", errors.New("unterminated JSON object")
+}
