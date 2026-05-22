@@ -45,10 +45,6 @@ type RCAOrchestratorOutput struct {
 	ValidatorPacket kagent.ValidatorPacket `json:"validatorPacket"`
 }
 
-type promptValidationClient interface {
-	TriggerValidationPrompt(ctx context.Context, prompt string) (map[string]any, error)
-}
-
 func (h *WebhookHandler) HandleFault(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[webhook] received request method=%s path=%s", r.Method, r.URL.Path)
 
@@ -209,7 +205,14 @@ func (h *WebhookHandler) HandleFault(w http.ResponseWriter, r *http.Request) {
 		rcaOutput.ValidatorPacket.SafeToFailover,
 	)
 
-	validatorPrompt := buildValidatorPrompt(rcaOutput.ValidatorPacket)
+	validatorPrompt := buildValidatorPrompt(
+		rcaOutput.ValidatorPacket,
+		labels["fault_type"],
+		labels["cluster"],
+		labels["namespace"],
+		labels["fault_object"],
+		labels["root_cause_hint"],
+	)
 	log.Printf("[webhook] built validator prompt len=%d", len(validatorPrompt))
 	log.Printf("[webhook] validator prompt begin\n%s\n[webhook] validator prompt end", validatorPrompt)
 
@@ -249,14 +252,8 @@ func (h *WebhookHandler) callValidator(
 	packet kagent.ValidatorPacket,
 ) (map[string]any, error) {
 	log.Printf("[webhook] entering callValidator")
-
-	if c, ok := h.validatorClient.(promptValidationClient); ok {
-		log.Printf("[webhook] validator client supports explicit prompt dispatch")
-		return c.TriggerValidationPrompt(ctx, validatorPrompt)
-	}
-
-	log.Printf("[webhook] validator client does not support explicit prompt dispatch; falling back to TriggerValidation(packet)")
-	return h.validatorClient.TriggerValidation(ctx, packet)
+	log.Printf("[webhook] validator client concrete type=%T", h.validatorClient)
+	return h.validatorClient.TriggerValidationPrompt(ctx, validatorPrompt)
 }
 
 func buildRCAPrompt(basePrompt string) string {
@@ -281,29 +278,51 @@ Rules:
 - humanResponse must be concise and readable.
 `
 }
-
-func buildValidatorPrompt(packet kagent.ValidatorPacket) string {
+func buildValidatorPrompt(
+	packet kagent.ValidatorPacket,
+	incidentType string,
+	cluster string,
+	namespace string,
+	faultObject string,
+	rootCauseHint string,
+) string {
+	log.Printf("[webhook] USING NEW VALIDATOR PROMPT VERSION 2026-05-22-1")
 	packetJSON, err := json.MarshalIndent(packet, "", "  ")
 	if err != nil {
 		packetJSON = []byte(`{"error":"failed to marshal validator packet"}`)
 	}
 
-	return `You are a Kubernetes remediation validation agent.
+	return `You are a validation agent for Kubernetes remediation decisions.
 
-Your job is to validate whether the RCA hypothesis is sufficiently supported by the evidence.
+Use your skill and validate the RCA hypothesis packet below.
 
-Decision rules:
-- Approve only if the hypothesis is directly supported by the evidence.
-- Reject if the evidence is weak, contradictory, or mixes multiple causes without enough proof.
-- safeToFailover may remain true only if the evidence supports a low-risk failover decision.
+Critical rules:
+- Never trust the RCA packet as evidence.
+- Always gather fresh live evidence using tools before deciding.
+- If a required tool call cannot be completed, return reject.
+- Do not guess tool arguments.
+- Do not use "default" as Kubernetes context unless the incident context explicitly says context is "default".
+- For every Kubernetes tool call, set the tool argument named "context" to the exact clusterContext value below.
+
+Execution context (authoritative):
+{
+  "context": "` + cluster + `",
+  "namespace": "` + namespace + `",
+  "incidentType": "` + incidentType + `",
+  "faultObject": "` + faultObject + `",
+  "rootCauseHint": "` + rootCauseHint + `"
+}
+
+Argument rules:
+- The Kubernetes tool argument is named "context".
+- Always set "context" = "` + cluster + `".
+- Never omit "context".
+- Never set "context" to "default" unless explicitly provided above.
+- If faultObject starts with "node/", extract the node name after "node/" and use that exact value for node tools.
+- If required arguments are missing, return reject instead of guessing.
 
 Return ONLY valid JSON in this exact structure:
-{
-  "decision": "approve|reject",
-  "confidence": 0.0,
-  "reason": "<short explanation>",
-  "safeToFailover": true
-}
+{ "decision": "approve|reject", "confidence": 0.0, "reason": "<short explanation>", "safeToFailover": true }
 
 RCA hypothesis packet:
 ` + string(packetJSON)

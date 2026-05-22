@@ -14,6 +14,7 @@ import (
 type Client interface {
 	TriggerRCA(ctx context.Context, prompt string) (map[string]any, error)
 	TriggerValidation(ctx context.Context, packet ValidatorPacket) (map[string]any, error)
+	TriggerValidationPrompt(ctx context.Context, prompt string) (map[string]any, error)
 }
 
 type ValidatorPacket struct {
@@ -36,7 +37,7 @@ func NewClient(baseURL, agentName string) *HTTPClient {
 		baseURL:   baseURL,
 		agentName: agentName,
 		client: &http.Client{
-			Timeout: 180 * time.Second,
+			Timeout: 5 * time.Minute,
 		},
 	}
 }
@@ -84,6 +85,10 @@ Return ONLY valid JSON in this exact structure:
 RCA hypothesis packet:
 ` + string(packetJSON)
 
+	return c.TriggerValidationPrompt(ctx, prompt)
+}
+
+func (c *HTTPClient) TriggerValidationPrompt(ctx context.Context, prompt string) (map[string]any, error) {
 	body := map[string]any{
 		"jsonrpc": "2.0",
 		"id":      fmt.Sprintf("validator-%d", time.Now().UnixNano()),
@@ -102,7 +107,7 @@ RCA hypothesis packet:
 		},
 	}
 
-	return c.doRPC(ctx, body, "TriggerValidation")
+	return c.doRPC(ctx, body, "TriggerValidationPrompt")
 }
 
 func (c *HTTPClient) doRPC(ctx context.Context, body map[string]any, op string) (map[string]any, error) {
@@ -129,13 +134,17 @@ func (c *HTTPClient) doRPC(ctx context.Context, body map[string]any, op string) 
 	respBody, _ := io.ReadAll(resp.Body)
 	log.Printf("[kagent] %s response status=%d duration=%s body=%s", op, resp.StatusCode, time.Since(start), string(respBody))
 
-	if resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("%s agent returned status %d body=%s", op, resp.StatusCode, string(respBody))
-	}
-
 	var out map[string]any
 	if err := json.Unmarshal(respBody, &out); err != nil {
 		return nil, fmt.Errorf("failed to decode %s response: %w; body=%s", op, err, string(respBody))
+	}
+
+	if errObj, ok := out["error"]; ok && errObj != nil {
+		return nil, fmt.Errorf("%s RPC error: %v", op, errObj)
+	}
+
+	if resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("%s agent returned status %d body=%s", op, resp.StatusCode, string(respBody))
 	}
 
 	return out, nil
