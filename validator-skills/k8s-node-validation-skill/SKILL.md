@@ -77,6 +77,23 @@ Reject when:
 - confidence is too high for the live evidence,
 - or `safeToFailover=true` is not justified by live evidence.
 
+## Remediation output rules
+
+After making the decision:
+- If the hypothesis is approved, return a remediation plan based only on validated evidence.
+- Recommend actions in priority order, starting with the least risky action that could resolve or contain the issue.
+- Prefer reversible, scoped, and well-understood actions before disruptive ones.
+- Include verification steps to confirm the expected recovery signal after each important action.
+- If the evidence is insufficient for a safe fix, recommend further diagnostics or containment instead of speculative remediation.
+- Set `requiresHumanApproval=true` for actions with meaningful operational risk, blast radius, or user impact.
+
+Remediation guidance principles:
+- Be specific about the intended outcome of each action.
+- Keep actions minimal and relevant to the validated condition.
+- Distinguish between corrective steps, containment steps, and verification steps.
+- Do not recommend destructive or high-blast-radius actions unless clearly justified by evidence.
+- Favor plans that allow rollback or controlled escalation.
+
 ## Output rules
 
 Return ONLY valid JSON in this exact structure:

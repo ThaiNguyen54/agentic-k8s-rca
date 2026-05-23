@@ -321,8 +321,26 @@ Argument rules:
 - If faultObject starts with "node/", extract the node name after "node/" and use that exact value for node tools.
 - If required arguments are missing, return reject instead of guessing.
 
+Remediation rules:
+- Base the remediationPlan only on validated live evidence.
+- If decision is approve, recommend the most relevant corrective action and verification steps.
+- If decision is reject, recommend the next safest diagnostic or containment steps instead of a root-cause fix.
+- Prefer reversible and low-risk actions first.
+- Do not suggest execution of destructive changes without human approval.
+
 Return ONLY valid JSON in this exact structure:
-{ "decision": "approve|reject", "confidence": 0.0, "reason": "<short explanation>", "safeToFailover": true }
+{
+  "decision": "approve|reject",
+  "confidence": 0.0,
+  "reason": "<short explanation>",
+  "safeToFailover": true,
+  "remediationPlan": {
+    "summary": "<short remediation summary>",
+    "steps": ["<step 1>", "<step 2>", "<step 3>"],
+    "risk": "low|medium|high",
+    "requiresHumanApproval": true
+  }
+}
 
 RCA hypothesis packet:
 ` + string(packetJSON)
