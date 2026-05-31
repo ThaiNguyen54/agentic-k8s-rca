@@ -3,6 +3,7 @@ package prompt
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/ThaiNguyen54/webhook-receiver/internal/systemcontext"
@@ -11,11 +12,7 @@ import (
 func BuildPrompt(labels, annotations map[string]string, startsAt string, ctx *systemcontext.IncidentContext) string {
 	cluster := labels["cluster"]
 	namespace := labels["namespace"]
-	faultType := labels["fault_type"]
-	faultObj := labels["fault_object"]
-	hint := labels["root_cause_hint"]
 	summary := annotations["summary"]
-	detail := annotations["detail"]
 
 	scope := "unknown"
 	node := "n/a"
@@ -85,12 +82,14 @@ func BuildPrompt(labels, annotations map[string]string, startsAt string, ctx *sy
 		}
 	}
 
-	return fmt.Sprintf(`You are a Kubernetes SRE agent performing autonomous root cause analysis.
+	base := fmt.Sprintf(`You are a Kubernetes SRE agent performing autonomous root cause analysis.
 
 Rules:
-- Use all available tools to gather live evidence before concluding.
-- Treat the context snapshot as guidance, not proof.
-- Verify all hypotheses with live cluster data before concluding.
+- Analyze the Kubernetes evidence sections at the bottom of this prompt first.
+- There may be multiple independent faults — identify each one separately.
+- If multiple services are affected, determine whether they share a root cause or are independent.
+- Cite specific evidence sections to support every conclusion.
+- You may use tools to gather additional live evidence if the embedded evidence is insufficient.
 - Do not ask for approval. Proceed autonomously.
 
 ## Incident Report
@@ -98,13 +97,7 @@ Detected At: %s
 Cluster: %s
 Kubeconfig Context: %s
 Namespace: %s
-Fault Type: %s
-// Affected Object: %s
-// Root Cause Hint: %s
 Summary: %s
-
-## Fault Detail
-%s
 
 ## System Context
 Incident Scope: %s
@@ -117,22 +110,18 @@ Context Summary: %s
 
 ## Expected Output
 Provide a structured response with:
-1. Root Cause
-2. Impacted Path
-3. Scope Assessment
-4. Evidence
-5. Remediation Steps
+1. Fault List — enumerate all distinct faults observed in the evidence
+2. Root Cause — the underlying cause per fault, citing specific evidence sections
+3. Impacted Path — services/pods affected per fault
+4. Scope Assessment — blast radius
+5. Remediation Steps — per fault, in priority order
 6. Prevention
 7. Confidence Level`,
 		startsAt,
 		cluster,
 		cluster,
 		namespace,
-		faultType,
-		faultObj,
-		hint,
 		summary,
-		detail,
 		scope,
 		node,
 		topology,
@@ -141,4 +130,53 @@ Provide a structured response with:
 		crds,
 		contextSummary,
 	)
+
+	if ctx != nil && len(ctx.RawEvidence) > 0 {
+		base = appendEvidence(base, ctx.RawEvidence)
+	}
+
+	return base
+}
+
+func appendEvidence(base string, evidence map[string]string) string {
+	var sb strings.Builder
+	sb.WriteString(base)
+	sb.WriteString("\n\n## Kubernetes Evidence\n")
+	sb.WriteString("The following raw evidence was collected from the cluster at alert time.\n")
+	sb.WriteString("Analyze all sections carefully — multiple faults may be present.\n")
+
+	// Fixed ordering for well-known keys
+	ordered := []string{
+		"nodes.txt",
+		"pods-all.txt",
+		"events.txt",
+		"services.txt",
+		"endpoints.txt",
+		"deployments.txt",
+	}
+	written := make(map[string]bool, len(evidence))
+
+	for _, key := range ordered {
+		if content, ok := evidence[key]; ok {
+			fmt.Fprintf(&sb, "\n=== EVIDENCE: %s ===\n", key)
+			sb.WriteString(content)
+			written[key] = true
+		}
+	}
+
+	// Remaining keys (node describes, pod describes, logs) sorted for determinism
+	remaining := make([]string, 0, len(evidence))
+	for key := range evidence {
+		if !written[key] {
+			remaining = append(remaining, key)
+		}
+	}
+	sort.Strings(remaining)
+
+	for _, key := range remaining {
+		fmt.Fprintf(&sb, "\n=== EVIDENCE: %s ===\n", key)
+		sb.WriteString(evidence[key])
+	}
+
+	return sb.String()
 }

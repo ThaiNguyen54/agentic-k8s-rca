@@ -259,23 +259,27 @@ func (h *WebhookHandler) callValidator(
 func buildRCAPrompt(basePrompt string) string {
 	return basePrompt + `
 
-Return ONLY valid JSON in this exact structure:
-{
-  "humanResponse": "<short human-readable explanation for the operator>",
-  "validatorPacket": {
-    "hypothesis": "<single-sentence hypothesis>",
-    "confidence": 0.0,
-    "evidenceSummary": "<short evidence summary>",
-    "safeToFailover": true
-  }
-}
+## Response Format
 
-Rules:
-- Return JSON only.
-- No markdown.
-- No prose outside JSON.
+Write your full analysis in plain markdown following the Expected Output structure above.
+Be thorough — this is what the operator will read.
+
+After the analysis, end your response with this exact section (no extra text after it):
+
+## Validator Packet
+` + "```" + `json
+{
+  "hypothesis": "<single-sentence root cause hypothesis>",
+  "confidence": 0.0,
+  "evidenceSummary": "<2-3 sentence summary of key evidence>",
+  "safeToFailover": true
+}
+` + "```" + `
+
+Rules for the Validator Packet:
 - confidence must be between 0 and 1.
-- humanResponse must be concise and readable.
+- hypothesis must be one sentence.
+- The ` + "`" + `## Validator Packet` + "`" + ` section must be the last thing in your response.
 `
 }
 func buildValidatorPrompt(
@@ -346,36 +350,52 @@ RCA hypothesis packet:
 ` + string(packetJSON)
 }
 
+const validatorPacketHeader = "## Validator Packet"
+
 func extractRCAOrchestratorOutput(agentResult map[string]any) (*RCAOrchestratorOutput, error) {
 	text := extractRCAResponseText(agentResult)
 	if strings.TrimSpace(text) == "" {
 		return nil, errors.New("no text found in RCA response")
 	}
 
-	jsonText, err := extractFirstJSONObject(text)
+	// Split on the delimiter — everything before is the human analysis,
+	// everything after contains the validator packet JSON.
+	idx := strings.LastIndex(text, validatorPacketHeader)
+	if idx == -1 {
+		return nil, fmt.Errorf("response missing %q section", validatorPacketHeader)
+	}
+
+	humanResponse := strings.TrimSpace(text[:idx])
+	packetSection := text[idx+len(validatorPacketHeader):]
+
+	if strings.TrimSpace(humanResponse) == "" {
+		return nil, errors.New("human analysis section is empty")
+	}
+
+	jsonText, err := extractFirstJSONObject(packetSection)
 	if err != nil {
-		return nil, fmt.Errorf("no JSON object found in RCA text: %w", err)
+		return nil, fmt.Errorf("no JSON found in validator packet section: %w", err)
 	}
 
-	var out RCAOrchestratorOutput
-	if err := json.Unmarshal([]byte(jsonText), &out); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal RCA JSON: %w", err)
+	var packet kagent.ValidatorPacket
+	if err := json.Unmarshal([]byte(jsonText), &packet); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal validator packet: %w", err)
 	}
 
-	if strings.TrimSpace(out.HumanResponse) == "" {
-		return nil, errors.New("missing humanResponse")
-	}
-	if strings.TrimSpace(out.ValidatorPacket.Hypothesis) == "" {
+	if strings.TrimSpace(packet.Hypothesis) == "" {
 		return nil, errors.New("missing validatorPacket.hypothesis")
 	}
-	if strings.TrimSpace(out.ValidatorPacket.EvidenceSummary) == "" {
+	if strings.TrimSpace(packet.EvidenceSummary) == "" {
 		return nil, errors.New("missing validatorPacket.evidenceSummary")
 	}
-	if out.ValidatorPacket.Confidence < 0 || out.ValidatorPacket.Confidence > 1 {
+	if packet.Confidence < 0 || packet.Confidence > 1 {
 		return nil, errors.New("validatorPacket.confidence must be between 0 and 1")
 	}
 
-	return &out, nil
+	return &RCAOrchestratorOutput{
+		HumanResponse:   humanResponse,
+		ValidatorPacket: packet,
+	}, nil
 }
 
 func extractRCAResponseText(agentResult map[string]any) string {

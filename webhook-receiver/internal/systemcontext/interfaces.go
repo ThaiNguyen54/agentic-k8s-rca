@@ -16,3 +16,7 @@ type KubernetesProvider interface {
 type TelemetryProvider interface {
 	GetEndpoints(ctx context.Context, cluster string) (TelemetryContext, error)
 }
+
+type EvidenceCollector interface {
+	CollectEvidence(ctx context.Context, in IncidentEvent) (map[string]string, error)
+}

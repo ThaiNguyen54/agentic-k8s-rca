@@ -20,6 +20,7 @@ type IncidentContext struct {
 	SystemTopology     *TopologyContext
 	TelemetryEndpoints TelemetryContext
 	CRDRegistry        []CRDInfo
+	RawEvidence        map[string]string
 	Summary            string
 	Warnings           []string
 }

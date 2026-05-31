@@ -10,12 +10,14 @@ import (
 type DefaultManager struct {
 	K8s       KubernetesProvider
 	Telemetry TelemetryProvider
+	Evidence  EvidenceCollector
 }
 
-func NewDefaultManager(k8s KubernetesProvider, telemetry TelemetryProvider) *DefaultManager {
+func NewDefaultManager(k8s KubernetesProvider, telemetry TelemetryProvider, evidence EvidenceCollector) *DefaultManager {
 	return &DefaultManager{
 		K8s:       k8s,
 		Telemetry: telemetry,
+		Evidence:  evidence,
 	}
 }
 
@@ -70,6 +72,15 @@ func (m *DefaultManager) BuildContext(ctx context.Context, in IncidentEvent) (*I
 			warnings = append(warnings, fmt.Sprintf("get telemetry endpoints: %v", err))
 		} else {
 			out.TelemetryEndpoints = telemetry
+		}
+	}
+
+	if m.Evidence != nil {
+		ev, err := m.Evidence.CollectEvidence(ctx, in)
+		if err != nil {
+			warnings = append(warnings, fmt.Sprintf("collect evidence: %v", err))
+		} else {
+			out.RawEvidence = ev
 		}
 	}
 

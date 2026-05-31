@@ -42,7 +42,8 @@ func main() {
 		},
 	})
 
-	scm := systemcontext.NewDefaultManager(k8sProvider, telemetryProvider)
+	evidenceCollector := systemcontext.NewKubectlEvidenceCollector(os.Getenv("KUBECONFIG"))
+	scm := systemcontext.NewDefaultManager(k8sProvider, telemetryProvider, evidenceCollector)
 
 	rcaClient := kagent.NewClient(
 		os.Getenv("RCA_AGENT_URL"),
