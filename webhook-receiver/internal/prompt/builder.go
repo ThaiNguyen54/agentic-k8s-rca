@@ -9,7 +9,11 @@ import (
 	"github.com/ThaiNguyen54/webhook-receiver/internal/systemcontext"
 )
 
-func BuildPrompt(labels, annotations map[string]string, startsAt string, ctx *systemcontext.IncidentContext) string {
+// buildBase renders the incident report + system context sections, without any
+// Kubernetes evidence appended. The evidence section is chosen by the caller:
+// either the raw collect-all dump (BuildPrompt) or the distilled Evidence-First
+// block (BuildPromptWithDistilledEvidence).
+func buildBase(labels, annotations map[string]string, startsAt string, ctx *systemcontext.IncidentContext) string {
 	cluster := labels["cluster"]
 	namespace := labels["namespace"]
 	summary := annotations["summary"]
@@ -86,8 +90,11 @@ func BuildPrompt(labels, annotations map[string]string, startsAt string, ctx *sy
 
 Rules:
 - Analyze the Kubernetes evidence sections at the bottom of this prompt first.
-- There may be multiple independent faults — identify each one separately.
-- If multiple services are affected, determine whether they share a root cause or are independent.
+- Identify PRIMARY root causes — failures that have distinct, independent origins.
+- Distinguish root causes from cascading effects. Do NOT list downstream symptoms as separate faults.
+  Example: if a node goes NotReady, pod failures and CNI errors on that node are cascading effects of that one root cause, not independent faults.
+- A second root cause is only valid if its origin is clearly unrelated to the first (different component, different failure mode, different evidence trail).
+- If all symptoms trace back to a single origin, report only one root cause.
 - Cite specific evidence sections to support every conclusion.
 - You may use tools to gather additional live evidence if the embedded evidence is insufficient.
 - Do not ask for approval. Proceed autonomously.
@@ -110,11 +117,11 @@ Context Summary: %s
 
 ## Expected Output
 Provide a structured response with:
-1. Fault List — enumerate all distinct faults observed in the evidence
-2. Root Cause — the underlying cause per fault, citing specific evidence sections
-3. Impacted Path — services/pods affected per fault
-4. Scope Assessment — blast radius
-5. Remediation Steps — per fault, in priority order
+1. Primary Root Cause(s) — one entry per independent origin; if all symptoms share one origin, list only one
+2. Cascading Effects — downstream symptoms per root cause (brief list, not expanded into sub-faults)
+3. Impacted Services — which services/pods are affected and how
+4. Scope Assessment — blast radius per root cause
+5. Remediation Steps — address each root cause independently, in priority order
 6. Prevention
 7. Confidence Level`,
 		startsAt,
@@ -131,10 +138,32 @@ Provide a structured response with:
 		contextSummary,
 	)
 
+	return base
+}
+
+// BuildPrompt is the original behavior: base prompt + the raw collect-all
+// evidence dump. Retained as the fallback path when the Evidence-First service
+// is unavailable.
+func BuildPrompt(labels, annotations map[string]string, startsAt string, ctx *systemcontext.IncidentContext) string {
+	base := buildBase(labels, annotations, startsAt, ctx)
 	if ctx != nil && len(ctx.RawEvidence) > 0 {
 		base = appendEvidence(base, ctx.RawEvidence)
 	}
+	return base
+}
 
+// BuildPromptWithDistilledEvidence uses the Evidence-First Retrieval Pipeline's
+// distilled block in place of the raw evidence dump. If distilled is empty it
+// falls back to the raw dump so a retrieval failure never yields an
+// evidence-less prompt.
+func BuildPromptWithDistilledEvidence(labels, annotations map[string]string, startsAt string, ctx *systemcontext.IncidentContext, distilled string) string {
+	base := buildBase(labels, annotations, startsAt, ctx)
+	if strings.TrimSpace(distilled) != "" {
+		return base + "\n\n" + distilled
+	}
+	if ctx != nil && len(ctx.RawEvidence) > 0 {
+		return appendEvidence(base, ctx.RawEvidence)
+	}
 	return base
 }
 

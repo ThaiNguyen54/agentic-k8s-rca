@@ -1,0 +1,42 @@
+# hook-edge1.yaml
+apiVersion: kagent.dev/v1alpha2
+kind: Hook
+metadata:
+  name: edge1-failover
+  namespace: default
+spec:
+  eventConfigurations:
+    - eventType: pod-restart
+      agentRef:
+        name: k8s-agent
+        namespace: kagent   # change to where your Agent CR lives; omit if same ns as this Hook
+      prompt: |
+        A pod restart event occurred.
+
+        Event: {{ .event | toJson }}
+
+        Call transition tool with:
+        clusterName="edge1"
+        # If your agent can query the pod, it should fetch nodeName; otherwise leave it blank.
+        reason="pod-restart: {{ .event.message }}"
+        triggerType="khook-event"
+        dryRun=false
+
+        Return the tool response JSON.
+
+    - eventType: probe-failed
+      agentRef:
+        name: k8s-agent
+        namespace: kagent   # change if needed
+      prompt: |
+        Probe failure detected.
+
+        Event: {{ .event | toJson }}
+
+        Call transition tool with:
+        clusterName="edge1"
+        reason="probe-failed: {{ .event.message }}"
+        triggerType="khook-event"
+        dryRun=false
+
+        Return the tool response JSON.

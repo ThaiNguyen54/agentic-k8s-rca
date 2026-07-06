@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"path": "../agent-mcp-server"
+		},
+		{
+			"path": "../transition-operator"
+		},
+		{
+			"path": "../node-monitor-operator"
+		},
+		{
+			"path": "../custom-agents"
+		},
+		{
+			"path": "../kagent"
+		},
+		{
+			"path": "../scenario-setup"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {}
+}

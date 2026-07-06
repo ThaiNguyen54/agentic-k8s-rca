@@ -1,0 +1,47 @@
+apiVersion: kagent.dev/v1alpha2
+kind: Hook
+metadata:
+  name: edge1-node-not-ready
+  namespace: default
+spec:
+  eventConfigurations:
+  - eventType: node-not-ready
+    agentRef:
+      name: k8s-agent
+      namespace: kagent
+    prompt: |
+      NodeNotReady fault detected on edge1.
+      Event: {{ .event | toJson }}
+
+      Workflow: investigate → classify → validate → transition IF approved.
+
+      HARD CONTEXT LIMITS (do NOT exceed):
+      - kubectl describe: 1 node ONLY → summarize in <= 100 words
+      - events: LAST 10 events only → list key ones
+      - logs: LAST 20 lines from kubelet OR 1 critical pod
+      - NO full YAML dumps, NO pod lists > 5 items
+      - Each tool summary: <= 5 lines
+
+      Steps:
+      1) Quick investigation (1-2 tools max).
+      2) Output TINY JSON classification packet:
+         {
+           "clusterName": "edge1",
+           "nodeName": "{{ .event.involvedObject.name }}",
+           "faultSignal": "node-not-ready",
+           "classification": {
+             "category": "kubelet_down|network_partition|cni_failure|resource_pressure|control_plane_issue|unknown",
+             "confidence": 0.0,
+             "hypothesis": "<1 sentence>",
+             "safeToFailover": true
+           },
+           "evidenceSummary": "<1-2 sentences>",
+           "impactedWorkloads": ["pod1"]
+         }
+      Step 3 MUST send to validator:
+      - exactly ONE line: the JSON object serialized as a string
+      - no prose before/after
+      4) If validator decision == "approve", call transition.
+         Else return validator JSON.
+
+      Keep everything ultra-compact. Prioritize validator call.

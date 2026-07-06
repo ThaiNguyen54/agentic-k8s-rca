@@ -1,0 +1,24 @@
+apiVersion: kagent.dev/v1alpha2
+kind: Hook
+metadata:
+  name: edge1-node-not-ready
+  namespace: default
+spec:
+  eventConfigurations:
+    - eventType: node-not-ready
+      agentRef:
+        name: k8s-agent
+        namespace: kagent   # set to where your Agent CR lives; omit if same namespace as Hook
+      prompt: |
+        NodeNotReady detected.
+
+        Event: {{ .event | toJson }}
+
+        Call the transition tool with:
+        clusterName="edge1"
+        nodeName="{{ .event.involvedObject.name }}"
+        reason="node-not-ready: {{ .event.message }}"
+        triggerType="khook-event"
+        dryRun=false
+
+        Return the tool response JSON.

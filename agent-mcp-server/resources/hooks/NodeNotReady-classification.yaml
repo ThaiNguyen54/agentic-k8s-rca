@@ -1,0 +1,28 @@
+apiVersion: kagent.dev/v1alpha2
+kind: Hook
+metadata:
+  name: edge1-node-not-ready
+  namespace: default
+spec:
+  eventConfigurations:
+  - eventType: node-not-ready
+    agentRef:
+      name: k8s-agent
+      namespace: kagent
+    prompt: |
+      NodeNotReady fault detected on edge1.
+      Event: {{ .event | toJson }}
+
+      Investigate and classify, then call transition.
+
+      Guardrails to avoid token blow-ups:
+      - Do NOT include raw command/tool output in the final response.
+      - Summarize each tool result in <= 10 lines.
+      - Collect at most: 1 node description, 30 events, 20 pods, and 50 log lines per component.
+      - If more data exists, pick the most recent/most relevant subset.
+
+      Output JSON only (max 2500 characters) with:
+      - classification {category, confidence, hypothesis}
+      - evidenceSummary (short)
+      Then call transition.
+

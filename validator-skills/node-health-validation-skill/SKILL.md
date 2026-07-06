@@ -1,10 +1,16 @@
 ---
 name: node-health-validation-skill
-description: Validate Kubernetes node health using node state, condition history, events, and host-level evidence
+description: Validate Kubernetes node health after any incident that causes a node to become NotReady, unreachable, or degraded — including kubelet process failure or restart, node NotReady conditions, pod evictions from a failing node, scheduling failures, memory or disk pressure, and host-level networking problems.
 ---
 # Kubernetes node health validation skill
 
-Use this skill when users want to validate whether a Kubernetes node is healthy after an incident, node failure, scheduling problem, or workload eviction.
+Use this skill when validating any hypothesis that involves a Kubernetes node becoming NotReady, unreachable, or degraded. This includes:
+- kubelet process stopped, crashed, or restarted
+- Node reported NotReady by the control plane
+- Pods evicted or rescheduled due to a node going down
+- Scheduling failures caused by node conditions
+- Memory pressure, disk pressure, or PID pressure on a node
+- Host-level networking or packet filtering problems on a node
 
 ## Instructions
 

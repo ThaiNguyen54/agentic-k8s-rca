@@ -1,0 +1,17 @@
+{
+  "incidentId": "inc-001",
+  "startsAt": "2026-05-21T15:36:00Z",
+  "labels": {
+    "cluster": "edge1",
+    "namespace": "default",
+    "fault_type": "node-network",
+    "fault_object": "edge1-md-0-tvqjw-8cwdf",
+    "root_cause_hint": "possible host firewall issue",
+    "node": "edge1-md-0-tvqjw-8cwdf",
+    "service": "my-service"
+  },
+  "annotations": {
+    "summary": "Traffic to my-service is failing",
+    "detail": "Synthetic probe failed and service path appears broken"
+  }
+}

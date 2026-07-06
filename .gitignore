@@ -1,0 +1,27 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Secrets / local env (keep .env.example)
+.env
+.env.local
+.env.production
+
+# Local vector store / RAG artifacts
+db/
+qdrant_rca/
+
+# Credentials
+*.kubeconfig
+
+# Node
+node_modules/
+
+# OS
+.DS_Store

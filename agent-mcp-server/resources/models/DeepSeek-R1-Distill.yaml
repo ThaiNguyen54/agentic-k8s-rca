@@ -1,0 +1,15 @@
+apiVersion: kagent.dev/v1alpha2
+kind: ModelConfig
+metadata:
+  name: deepseek-r1
+  namespace: kagent # Ensure this matches where Kagent is running
+spec:
+  # vLLM is OpenAI-compatible
+  provider: OpenAI
+  model: DeepSeek-R1-Distill-Llama-70B-FP8
+  apiKeySecret: kagent-openai-local
+  apiKeySecretKey: OPENAI_API_KEY
+  
+  # Point to your internal vLLM service
+  openAI:
+    baseUrl: "http://192.168.24.21:31785/v1"

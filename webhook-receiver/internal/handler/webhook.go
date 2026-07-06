@@ -19,6 +19,7 @@ type WebhookHandler struct {
 	rcaClient       kagent.Client
 	validatorClient kagent.Client
 	scm             systemcontext.Manager
+	evidence        *systemcontext.EvidenceRetriever
 }
 
 func NewWebhookHandler(
@@ -26,10 +27,17 @@ func NewWebhookHandler(
 	validatorClient kagent.Client,
 	scm systemcontext.Manager,
 ) *WebhookHandler {
+	// Feature-flagged: nil unless EVIDENCE_API_URL is set. When nil, prompts
+	// use the original raw evidence dump.
+	evidence := systemcontext.NewEvidenceRetrieverFromEnv()
+	if evidence != nil {
+		log.Printf("[webhook] Evidence-First Retrieval Pipeline enabled")
+	}
 	return &WebhookHandler{
 		rcaClient:       rcaClient,
 		validatorClient: validatorClient,
 		scm:             scm,
+		evidence:        evidence,
 	}
 }
 
@@ -43,6 +51,34 @@ type FaultWebhookRequest struct {
 type RCAOrchestratorOutput struct {
 	HumanResponse   string                 `json:"humanResponse"`
 	ValidatorPacket kagent.ValidatorPacket `json:"validatorPacket"`
+}
+
+type RemediationPlan struct {
+	Summary               string   `json:"summary"`
+	Steps                 []string `json:"steps"`
+	Risk                  string   `json:"risk"`
+	RequiresHumanApproval bool     `json:"requiresHumanApproval"`
+}
+
+type FailoverPlan struct {
+	Summary               string          `json:"summary"`
+	ClusterPolicyManifest json.RawMessage `json:"clusterPolicyManifest"`
+	Risk                  string          `json:"risk"`
+	RequiresHumanApproval bool            `json:"requiresHumanApproval"`
+}
+
+type ValidatorDecision struct {
+	Decision        string          `json:"decision"`
+	Confidence      float64         `json:"confidence"`
+	Reason          string          `json:"reason"`
+	SafeToFailover  bool            `json:"safeToFailover"`
+	RemediationPlan RemediationPlan `json:"remediationPlan"`
+	FailoverPlan    FailoverPlan    `json:"failoverPlan,omitempty"`
+}
+
+type ValidatorOrchestratorOutput struct {
+	HumanResponse string            `json:"humanResponse"`
+	Decision      ValidatorDecision `json:"decision"`
 }
 
 func (h *WebhookHandler) HandleFault(w http.ResponseWriter, r *http.Request) {
@@ -178,7 +214,16 @@ func (h *WebhookHandler) HandleFault(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	basePrompt := prompt.BuildPrompt(labels, annotations, startsAt, ctxData)
+	// Evidence-First Retrieval Pipeline: if enabled, distill the raw evidence
+	// bundle into a reranked/compressed/edge-placed block. Falls back to the
+	// raw collect-all dump on any failure.
+	var basePrompt string
+	if distilled, ok := h.evidence.Distill(context.Background(), incident, ctxData); ok {
+		log.Printf("[webhook] using distilled evidence block len=%d (was raw dump)", len(distilled))
+		basePrompt = prompt.BuildPromptWithDistilledEvidence(labels, annotations, startsAt, ctxData, distilled)
+	} else {
+		basePrompt = prompt.BuildPrompt(labels, annotations, startsAt, ctxData)
+	}
 	rcaPrompt := buildRCAPrompt(basePrompt)
 
 	log.Printf("[webhook] built RCA prompt len=%d", len(rcaPrompt))
@@ -225,6 +270,17 @@ func (h *WebhookHandler) HandleFault(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[webhook] validation success for incidentId=%s", incidentID)
 
+	validationSection := map[string]any{
+		"raw": validationRaw,
+	}
+	validatorOutput, err := extractValidatorOrchestratorOutput(validationRaw)
+	if err != nil {
+		log.Printf("[webhook] failed to extract validator output (non-fatal): %v", err)
+	} else {
+		validationSection["humanResponse"] = validatorOutput.HumanResponse
+		validationSection["decision"] = validatorOutput.Decision
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(map[string]any{
 		"ok":         true,
@@ -234,10 +290,7 @@ func (h *WebhookHandler) HandleFault(w http.ResponseWriter, r *http.Request) {
 			"validatorPacket": rcaOutput.ValidatorPacket,
 			"raw":             rcaRaw,
 		},
-		"validation": map[string]any{
-			"prompt": validatorPrompt,
-			"raw":    validationRaw,
-		},
+		"validation": validationSection,
 	}); err != nil {
 		log.Printf("[webhook] failed to encode response: %v", err)
 		return
@@ -290,64 +343,138 @@ func buildValidatorPrompt(
 	faultObject string,
 	rootCauseHint string,
 ) string {
-	log.Printf("[webhook] USING NEW VALIDATOR PROMPT VERSION 2026-05-22-1")
+	log.Printf("[webhook] USING NEW VALIDATOR PROMPT VERSION 2026-05-31-1")
 	packetJSON, err := json.MarshalIndent(packet, "", "  ")
 	if err != nil {
 		packetJSON = []byte(`{"error":"failed to marshal validator packet"}`)
 	}
 
+	skillInstruction := validatorSkillInstruction(incidentType, faultObject)
+
 	return `You are a validation agent for Kubernetes remediation decisions.
 
-Use your skill and validate the RCA hypothesis packet below.
+` + skillInstruction + `
 
 Critical rules:
 - Never trust the RCA packet as evidence.
-- Always gather fresh live evidence using tools before deciding.
-- If a required tool call cannot be completed, return reject.
+- Always gather fresh live evidence using the skill tools before deciding.
+- If a required tool call cannot be completed, return decision=reject.
 - Do not guess tool arguments.
-- Do not use "default" as Kubernetes context unless the incident context explicitly says context is "default".
-- For every Kubernetes tool call, set the tool argument named "context" to the exact clusterContext value below.
+- Always set the tool argument "context" to the exact clusterContext value below.
+- If faultObject starts with "node/", extract the node name after "node/" and pass it to node tools.
 
 Execution context (authoritative):
 {
   "context": "` + cluster + `",
   "namespace": "` + namespace + `",
   "incidentType": "` + incidentType + `",
-  "faultObject": "` + faultObject + `",
-  "rootCauseHint": "` + rootCauseHint + `"
+  "faultObject": "` + faultObject + `"
 }
 
-Argument rules:
-- The Kubernetes tool argument is named "context".
-- Always set "context" = "` + cluster + `".
-- Never omit "context".
-- Never set "context" to "default" unless explicitly provided above.
-- If faultObject starts with "node/", extract the node name after "node/" and use that exact value for node tools.
-- If required arguments are missing, return reject instead of guessing.
-
 Remediation rules:
-- Base the remediationPlan only on validated live evidence.
+- Base the remediationPlan only on what you observed with the skill tools.
 - If decision is approve, recommend the most relevant corrective action and verification steps.
-- If decision is reject, recommend the next safest diagnostic or containment steps instead of a root-cause fix.
+- If decision is reject, recommend the next safest diagnostic steps instead.
 - Prefer reversible and low-risk actions first.
-- Do not suggest execution of destructive changes without human approval.
+- Do not suggest destructive changes without human approval.
 
-Return ONLY valid JSON in this exact structure:
+Failover rules:
+- Always generate a failoverPlan as a second option, regardless of the decision.
+- Call get_clusterpolicy_schema (no arguments — it reads from the management cluster) to get the CRD spec before generating the manifest.
+- Call list_contexts to find available clusters — choose the healthiest cluster that is NOT the faulty one as the target.
+- Generate a complete, valid ClusterPolicy manifest for the affected workloads based on the CRD schema.
+- clusterPolicyManifest must be a JSON object (not a YAML string) — fill in all fields from the CRD schema.
+- Set requiresHumanApproval to true for the failoverPlan.
+
+## Response Format
+
+Write your full validation analysis in plain markdown — explain what each tool returned and how it supports or refutes the hypothesis.
+
+After the analysis, end your response with this exact section (no extra text after it):
+
+## Validation Result
+` + "```" + `json
 {
   "decision": "approve|reject",
   "confidence": 0.0,
   "reason": "<short explanation>",
   "safeToFailover": true,
   "remediationPlan": {
-    "summary": "<short remediation summary>",
+    "summary": "<short direct-fix summary>",
     "steps": ["<step 1>", "<step 2>", "<step 3>"],
+    "risk": "low|medium|high",
+    "requiresHumanApproval": true
+  },
+  "failoverPlan": {
+    "summary": "<short failover summary>",
+    "clusterPolicyManifest": {
+      "apiVersion": "transition.dcnlab.ssu.ac.kr/v1",
+      "kind": "ClusterPolicy",
+      "metadata": {
+        "name": "<policy-name>"
+      },
+      "spec": {
+        "clusterSelector": {
+          "name": "<source-cluster>",
+          "repo": "<gitops-repo-url>",
+          "repoType": "git"
+        },
+        "packageSelectors": [
+          {
+            "name": "<workload-name>",
+            "packagePath": "<path>",
+            "packageType": "Stateless"
+          }
+        ],
+        "targetClusterPolicy": {
+          "preferClusters": [
+            {
+              "name": "<target-cluster>",
+              "repoType": "git",
+              "weight": 100
+            }
+          ]
+        }
+      }
+    },
     "risk": "low|medium|high",
     "requiresHumanApproval": true
   }
 }
+` + "```" + `
 
-RCA hypothesis packet:
+Rules for the Validation Result:
+- confidence must be between 0 and 1.
+- decision must be exactly "approve" or "reject".
+- clusterPolicyManifest must be a valid YAML string matching the CRD schema from get_clusterpolicy_schema.
+- The ` + "`" + `## Validation Result` + "`" + ` section must be the last thing in your response.
+
+RCA hypothesis packet to validate:
 ` + string(packetJSON)
+}
+
+// validatorSkillInstruction describes WHAT needs to be validated so the agent
+// selects the appropriate skill on its own based on the skill descriptions.
+func validatorSkillInstruction(incidentType, faultObject string) string {
+	it := strings.ToLower(incidentType)
+	fo := strings.ToLower(faultObject)
+
+	switch {
+	case strings.Contains(it, "node") || strings.HasPrefix(fo, "node/"):
+		nodeName := strings.TrimPrefix(fo, "node/")
+		return `## Validation Task
+
+The hypothesis involves a node-level incident. You must validate whether the node is currently healthy, degraded, or unhealthy, and whether the hypothesis is supported by live evidence.
+
+Target node: ` + "`" + nodeName + "`" + `
+
+Use your available skills to collect node health evidence — check the current node state, condition history, recent events on the node, and workload impact on affected pods.`
+
+	default:
+		return `## Validation Task
+
+Use your available skills and Kubernetes tools to gather fresh live evidence and validate the hypothesis below.`
+	}
 }
 
 const validatorPacketHeader = "## Validator Packet"
@@ -395,6 +522,46 @@ func extractRCAOrchestratorOutput(agentResult map[string]any) (*RCAOrchestratorO
 	return &RCAOrchestratorOutput{
 		HumanResponse:   humanResponse,
 		ValidatorPacket: packet,
+	}, nil
+}
+
+const validationResultHeader = "## Validation Result"
+
+func extractValidatorOrchestratorOutput(agentResult map[string]any) (*ValidatorOrchestratorOutput, error) {
+	text := extractRCAResponseText(agentResult)
+	if strings.TrimSpace(text) == "" {
+		return nil, errors.New("no text found in validator response")
+	}
+
+	idx := strings.LastIndex(text, validationResultHeader)
+	if idx == -1 {
+		return nil, fmt.Errorf("response missing %q section", validationResultHeader)
+	}
+
+	humanResponse := strings.TrimSpace(text[:idx])
+	resultSection := text[idx+len(validationResultHeader):]
+
+	if strings.TrimSpace(humanResponse) == "" {
+		return nil, errors.New("human analysis section is empty")
+	}
+
+	jsonText, err := extractFirstJSONObject(resultSection)
+	if err != nil {
+		return nil, fmt.Errorf("no JSON found in validation result section: %w", err)
+	}
+
+	var decision ValidatorDecision
+	if err := json.Unmarshal([]byte(jsonText), &decision); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal validator decision: %w", err)
+	}
+
+	if decision.Decision != "approve" && decision.Decision != "reject" {
+		return nil, fmt.Errorf("invalid decision value: %q", decision.Decision)
+	}
+
+	return &ValidatorOrchestratorOutput{
+		HumanResponse: humanResponse,
+		Decision:      decision,
 	}, nil
 }
 

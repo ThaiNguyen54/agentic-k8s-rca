@@ -1,0 +1,39 @@
+name: k8s-multi-cluster
+framework: fastmcp-python
+version: 0.1.0
+description: "Multi-cluster K8s tools for k8s-agent/validator (read-only)"
+
+# Enable production secrets with your kubeconfig
+secrets:
+  local:
+    enabled: false
+    provider: env
+    file: .env.local
+  production:
+    enabled: true                    # ← ENABLED
+    provider: kubernetes
+    secretName: multicluster-kubeconfig  # ← YOUR SECRET NAME
+    namespace: kagent                 # ← YOUR NAMESPACE
+  staging:
+    enabled: false
+    provider: kubernetes
+    secretName: k8s-multi-cluster-secrets-staging
+    namespace: default
+
+deployment:
+  image: my-mcp-server:latest
+  cmd: "uv"
+  args: ["run", "python", "src/main.py"]
+  env:
+  - name: KUBECONFIG
+    value: /kube/config              # ← Pod sees kubeconfig here
+  volumeMounts:                      # ← Mount secret as file
+  - name: kubeconfig-volume
+    mountPath: /kube
+    readOnly: true
+  volumes:
+  - name: kubeconfig-volume
+    secret:
+      secretName: multicluster-kubeconfig
+
+transportType: "stdio"

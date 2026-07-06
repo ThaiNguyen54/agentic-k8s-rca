@@ -1,0 +1,50 @@
+name: k8s-multi-cluster
+framework: fastmcp-python
+version: 0.1.0
+description: MCP server built with fastmcp-python
+secrets:
+    local:
+        enabled: false
+        provider: env
+        file: .env.production
+    production:
+        enabled: true
+        provider: kubernetes
+        secretName: multi-cluster-kubeconfig
+        namespace: kagent
+    staging:
+        enabled: false
+        provider: kubernetes
+        secretName: k8s-multi-cluster-secrets-staging
+        namespace: default
+deployment:
+  template:
+    spec:
+     containers:
+      - name: mcp-server  # Or container name from Dockerfile
+        env:
+        - name: KUBECONFIG_B64
+          valueFrom:
+            secretKeyRef:
+              name: multi-cluster-kubeconfig
+              key: KUBECONFIG_B64
+        - name: KUBECONFIG_PATH  # Your code uses this
+          value: /tmp/multi-cluster.kubeconfig
+  env:
+    - name: SSH_KEY_PATH
+      value: /var/run/secrets/host-ssh/agentic-ai.pem
+  volumes:
+    - name: host-ssh-key
+      secret:
+        secretName: host-ssh-key
+        defaultMode: 0400
+        items:
+          - key: agentic-ai.pem
+            path: agentic-ai.pem
+  volumeMounts:
+    - name: host-ssh-key
+      mountPath: /var/run/secrets/host-ssh
+      readOnly: true
+created_at: 2026-02-03T07:00:17.464434194Z
+updated_at: 2026-02-03T07:00:17.475732176Z
+

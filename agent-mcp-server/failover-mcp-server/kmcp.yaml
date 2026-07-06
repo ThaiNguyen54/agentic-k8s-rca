@@ -1,0 +1,45 @@
+name: failover-mcp-server
+framework: fastmcp-python
+version: 0.1.0
+description: MCP server built with fastmcp-python
+secrets:
+    local:
+        enabled: false
+        provider: env
+        file: .env.local
+    production:
+        enabled: true
+        provider: kubernetes
+        secretName: multi-cluster-kubeconfig
+        namespace: kagent
+    staging:
+        enabled: false
+        provider: kubernetes
+        secretName: failover-mcp-server-secrets-staging
+        namespace: default
+deployment:
+  template:
+    spec:
+     containers:
+      - name: mcp-server
+        env:
+        - name: KUBECONFIG_B64
+          valueFrom:
+            secretKeyRef:
+              name: multi-cluster-kubeconfig
+              key: KUBECONFIG_B64
+        - name: KUBECONFIG_PATH
+          value: /tmp/multi-cluster.kubeconfig
+tools:
+    transition:
+        name: transition
+        url: "http://192.168.28.102:8080/transition"
+        timeoutSeconds: 30
+        verifyTLS: true
+    get_clusterpolicy_schema:
+        name: get_clusterpolicy_schema
+        # Empty = use in-cluster credentials (service account token).
+        # Set to a context name only when running outside the cluster.
+        managementContext: ""
+created_at: 2026-02-01T06:25:25.849621731Z
+updated_at: 2026-02-01T06:25:25.865727719Z

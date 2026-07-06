@@ -1,0 +1,12 @@
+apiVersion: kagent.dev/v1alpha2
+kind: ModelConfig
+metadata:
+  name: llama33-fp8
+  namespace: kagent
+spec:
+  provider: OpenAI
+  model: nvidia-Llama33-FP8
+  apiKeySecret: kagent-openai-local
+  apiKeySecretKey: OPENAI_API_KEY
+  openAI:
+    baseUrl: "http://192.168.24.21:31784/v1"

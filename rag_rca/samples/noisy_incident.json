@@ -1,0 +1,16 @@
+{
+  "fault": {
+    "cluster": "edge1",
+    "namespace": "default",
+    "pod": "checkoutservice-7d9f8c6b45-abcde",
+    "fault_type": "Application_Fault",
+    "fault_object": "pod/checkoutservice-7d9f8c6b45-abcde",
+    "root_cause_hint": "crashloopbackoff",
+    "summary": "[edge1] crashloopbackoff detected on pod/checkoutservice-7d9f8c6b45-abcde"
+  },
+  "sources": {
+    "pods-all.txt": "NAME                                 READY   STATUS             RESTARTS   AGE\nfrontend-6b9c4d8f7-11111             1/1     Running            0          5d\ncheckoutservice-7d9f8c6b45-abcde     0/1     CrashLoopBackOff   7          12m\ncartservice-5f6d7c8b9-22222          1/1     Running            0          5d\n",
+    "events.txt": "LAST SEEN   TYPE      REASON      OBJECT                                     MESSAGE\n5d          Normal    Pulled      pod/frontend-6b9c4d8f7-11111               Container image pulled\n5d          Normal    Started     pod/frontend-6b9c4d8f7-11111               Started container server\n30s         Warning   BackOff     pod/checkoutservice-7d9f8c6b45-abcde       Back-off restarting failed container checkout in pod checkoutservice-7d9f8c6b45-abcde\n45s         Warning   Unhealthy   pod/checkoutservice-7d9f8c6b45-abcde       Readiness probe failed: HTTP probe failed with statuscode: 500\n5d          Normal    Pulled      pod/cartservice-5f6d7c8b9-22222            Container image pulled\n",
+    "checkoutservice-7d9f8c6b45-abcde-logs.txt": "level=info msg=\"handled GET /health 200 OK\" ts=2026-07-05T10:00:01Z\nlevel=info msg=\"handled GET /health 200 OK\" ts=2026-07-05T10:00:02Z\nlevel=error msg=\"readiness check failed: dial tcp 10.0.3.9:7070: connect: connection refused\" ts=2026-07-05T10:00:03Z\nlevel=info msg=\"handled GET /health 200 OK\" ts=2026-07-05T10:00:04Z\n"
+  }
+}

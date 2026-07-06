@@ -1,0 +1,21 @@
+name: rag-mcp-server
+framework: fastmcp-python
+version: 0.1.0
+description: MCP server built with fastmcp-python
+secrets:
+    local:
+        enabled: false
+        provider: env
+        file: .env.local
+    production:
+        enabled: false
+        provider: kubernetes
+        secretName: rag-mcp-server-secrets-production
+        namespace: default
+    staging:
+        enabled: false
+        provider: kubernetes
+        secretName: rag-mcp-server-secrets-staging
+        namespace: default
+created_at: 2026-04-15T12:16:48.134501753Z
+updated_at: 2026-04-15T12:16:48.150446802Z

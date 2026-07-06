@@ -1,0 +1,10 @@
+# requirements.txt
+pydantic
+pyyaml
+sentence-transformers
+qdrant-client
+# Evidence-First Retrieval Pipeline HTTP service (optional; core + tests run
+# without these). The cross-encoder reranker falls back to a lexical scorer
+# when sentence-transformers/models are unavailable.
+fastapi
+uvicorn
