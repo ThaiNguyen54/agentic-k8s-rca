@@ -25,3 +25,10 @@ node_modules/
 
 # OS
 .DS_Store
+
+# Paper source (kept out of the public portfolio repo)
+access.tex
+
+# Compiled Go binaries (build with `make build`; not committed)
+webhook-receiver/webhook-receiver
+multi-cluster-fault-controller/bin/
