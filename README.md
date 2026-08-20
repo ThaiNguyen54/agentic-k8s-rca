@@ -83,15 +83,22 @@ Results are backed by Wilson score intervals, McNemar's paired test, and a secon
 ## Getting started (EFCA pipeline)
 
 ```bash
-cd rag_rca
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+# Setup Environment Varibale
+export RCA_AGENT_URL="http://127.0.0.1:8083/api/a2a/kagent/k8s-agent/"
+export RCA_AGENT_NAME=k8s-agent
 
-# Run the test suite
-pytest tests/
+export VALIDATOR_AGENT_URL="http://127.0.0.1:8083/api/a2a/kagent/validator/"
+export VALIDATOR_AGENT_NAME=validator-agent
 
-# Reproduce an ablation / benchmark (see rag_rca/eval/ and rag_rca/docs/c9_reproducibility.md)
-python eval/e2e_ablation.py
+export WEBHOOK_URL="http://127.0.0.1:9093/webhook/fault"
+
+# run the webhook-receiver
+cd agentic-k8s-rca/webhook-receiver
+go run ./cmd/main.go
+
+# run the multi-cluster-fault-controller
+cd agentic-k8s-rca/multi-cluster-fault-controller
+go run ./cmd/main.go
 ```
 
 > The cross-encoder reranker falls back to a lexical + signal scorer when a GPU or the model weights aren't available, so the core pipeline and tests run without a GPU.

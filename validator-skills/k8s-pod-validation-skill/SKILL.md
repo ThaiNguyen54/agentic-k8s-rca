@@ -53,15 +53,23 @@ The RCA packet is a claim, not evidence.
 
 4. If the hypothesis mentions:
    - crash
+   - CrashLoopBackOff
    - readiness
    - liveness
    - probe
    - connectivity
    - runtime error
    - application failure
+   - image pull failure, ImagePullBackOff, ErrImagePull, or an invalid image tag
+   - OOMKilled, out-of-memory termination, exit code 137, or an exceeded memory limit
 
    then you MUST also call:
    - `get_logs_by_selector`
+
+   For image-pull and OOMKilled hypotheses the decisive evidence is the container
+   state and termination reason, so also confirm the reported reason in the pod
+   events or pod status before deciding; never approve an image-pull or OOM claim
+   from the hypothesis text alone.
 
 5. If the hypothesis mentions service routing, backend failure, or service connectivity:
    - you MUST call `get_service_details`

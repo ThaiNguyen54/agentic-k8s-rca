@@ -1,0 +1,113 @@
+{
+  "mesh_microrca": {
+    "top1": 33.3,
+    "top3": 83.3,
+    "n": 6
+  },
+  "mesh_llm": {
+    "rcacopilot": {
+      "acc": 100.0,
+      "tok": 12247,
+      "lat": 31.6,
+      "n": 6
+    },
+    "rcagent": {
+      "acc": 100.0,
+      "tok": 34588,
+      "lat": 127.6,
+      "n": 6
+    },
+    "yours_distilled": {
+      "acc": 50.0,
+      "tok": 3328,
+      "lat": 47.2,
+      "n": 6
+    },
+    "yours_raw": {
+      "acc": 100.0,
+      "tok": 11530,
+      "lat": 43.0,
+      "n": 6
+    }
+  },
+  "real20_llm": {
+    "rcacopilot": {
+      "acc": 75.0,
+      "prec": 75.0,
+      "tok": 12186,
+      "lat": 28.0,
+      "n": 20,
+      "fails": 0
+    },
+    "rcagent": {
+      "acc": 85.0,
+      "prec": 85.0,
+      "tok": 34742,
+      "lat": 111.8,
+      "n": 20,
+      "fails": 0
+    },
+    "yours_distilled": {
+      "acc": 85.0,
+      "prec": 85.0,
+      "tok": 3631,
+      "lat": 37.9,
+      "n": 20,
+      "fails": 0
+    },
+    "yours_raw": {
+      "acc": 90.0,
+      "prec": 90.0,
+      "tok": 11580,
+      "lat": 39.5,
+      "n": 20,
+      "fails": 0
+    }
+  },
+  "real20_by_category": {
+    "Admission": {
+      "rcacopilot": 100.0,
+      "rcagent": 100.0,
+      "yours_distilled": 100.0,
+      "yours_raw": 100.0
+    },
+    "Performance": {
+      "rcacopilot": 0.0,
+      "rcagent": 100.0,
+      "yours_distilled": 50.0,
+      "yours_raw": 100.0
+    },
+    "Runtime": {
+      "rcacopilot": 75.0,
+      "rcagent": 75.0,
+      "yours_distilled": 75.0,
+      "yours_raw": 100.0
+    },
+    "Scheduling": {
+      "rcacopilot": 75.0,
+      "rcagent": 100.0,
+      "yours_distilled": 100.0,
+      "yours_raw": 100.0
+    },
+    "Service Routing": {
+      "rcacopilot": 100.0,
+      "rcagent": 66.7,
+      "yours_distilled": 100.0,
+      "yours_raw": 66.7
+    },
+    "Startup": {
+      "rcacopilot": 66.7,
+      "rcagent": 66.7,
+      "yours_distilled": 66.7,
+      "yours_raw": 66.7
+    }
+  },
+  "real20_microrca": {
+    "top1": 5.0,
+    "top3": 40.0,
+    "live": 13,
+    "structural_miss": 7,
+    "with_signal": 13,
+    "n": 20
+  }
+}

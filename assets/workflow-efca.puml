@@ -1,0 +1,55 @@
+@startuml end-to-end-workflow-efca
+title End-to-End System Workflow
+
+skinparam backgroundColor White
+skinparam defaultFontName Helvetica
+skinparam sequenceMessageAlign left
+skinparam maxMessageSize 260
+skinparam sequence {
+    ParticipantBackgroundColor #E6E6F5
+    ParticipantBorderColor #2B2B2B
+    ParticipantFontStyle bold
+    ParticipantFontColor #000000
+    ParticipantFontSize 13
+    LifeLineBorderColor #9A9A9A
+    LifeLineBackgroundColor #FFFFFF
+    ArrowColor #000000
+    ArrowFontSize 12
+}
+
+participant "Fault Detection\nOperator"  as FDO
+participant "Orchestrator"               as ORC
+participant "SystemContext\nCollector"   as SCC
+participant "EFCA"                       as EFCA
+participant "RCA\nAgent"                 as RCA
+participant "MCP\nServer"                as MCP
+participant "Validation\nAgent"          as VA
+participant "Validation\nSkills"         as VS
+participant "Remediation\nPlan"          as RP
+
+autonumber "<b>0"
+
+FDO -> ORC  : Fault detected
+ORC -> SCC  : Get system context
+SCC --> ORC : Topology, CRDs, endpoints
+
+ORC  -> EFCA : Assemble evidence context
+EFCA -> EFCA : Retrieve, rerank, compress, place
+EFCA --> ORC : Evidence-focused prompt
+
+ORC -> RCA  : Start RCA
+RCA -> MCP  : Collect extra evidence
+MCP --> RCA : Logs, metrics, state
+RCA -> RCA  : Reason with context + evidence
+RCA --> ORC : Hypothesis
+
+ORC -> VA  : Validate hypothesis
+VA -> VS   : Get validation skill
+VS --> VA  : Validation skill
+VA -> MCP  : Collect extra evidence
+MCP --> VA : Logs, metrics, state
+VA -> VA   : Reason with context + evidence
+
+VA -> RP   : Generate remediation plan
+
+@enduml

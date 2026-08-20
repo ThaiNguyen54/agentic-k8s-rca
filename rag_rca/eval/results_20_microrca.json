@@ -1,0 +1,403 @@
+[
+  {
+    "incident": "edge1-cpu-quota-001",
+    "culprit": "cpu-hog (ResourceQuota cpu-quota-small)",
+    "namespace": "boutique-quota-cpu",
+    "category": "Admission",
+    "fault_type": "NamespaceCPUQuotaExceeded",
+    "live": false,
+    "hit@1": false,
+    "hit@3": false,
+    "signal": false,
+    "reason": "ResourceQuota rejects pod creation - culprit never runs, no container metrics",
+    "ranking": []
+  },
+  {
+    "incident": "edge1-memory-quota-001",
+    "culprit": "mem-hog (ResourceQuota mem-quota-small)",
+    "namespace": "boutique-quota-cpu",
+    "category": "Admission",
+    "fault_type": "NamespaceMemoryQuotaExceeded",
+    "live": false,
+    "hit@1": false,
+    "hit@3": false,
+    "signal": false,
+    "reason": "ResourceQuota rejects pod creation - culprit never runs, no container metrics",
+    "ranking": []
+  },
+  {
+    "incident": "edge1-pod-quota-001",
+    "culprit": "pod-hog (ResourceQuota pod-quota-small)",
+    "namespace": "boutique-quota-cpu",
+    "category": "Admission",
+    "fault_type": "NamespacePodQuotaExceeded",
+    "live": false,
+    "hit@1": false,
+    "hit@3": false,
+    "signal": false,
+    "reason": "ResourceQuota rejects pod creation - culprit never runs, no container metrics",
+    "ranking": []
+  },
+  {
+    "incident": "edge1-missing-sa-001",
+    "culprit": "sa-hog",
+    "namespace": "boutique-quota-cpu",
+    "category": "Admission",
+    "fault_type": "MissingServiceAccount",
+    "live": true,
+    "signal": true,
+    "hit@1": false,
+    "hit@3": false,
+    "top5": [
+      "db-hog"
+    ],
+    "ranking": [
+      [
+        "db-hog",
+        1.1116
+      ]
+    ]
+  },
+  {
+    "incident": "edge1-node-selector-mismatch-001",
+    "culprit": "node-selector-hog",
+    "namespace": "boutique-quota-cpu",
+    "category": "Scheduling",
+    "fault_type": "NodeSelectorMismatch",
+    "live": true,
+    "signal": true,
+    "hit@1": false,
+    "hit@3": false,
+    "top5": [
+      "db-hog"
+    ],
+    "ranking": [
+      [
+        "db-hog",
+        1.4383
+      ]
+    ]
+  },
+  {
+    "incident": "edge1-node-affinity-mismatch-001",
+    "culprit": "node-affinity-hog",
+    "namespace": "boutique-quota-cpu",
+    "category": "Scheduling",
+    "fault_type": "NodeAffinityMismatch",
+    "live": true,
+    "signal": true,
+    "hit@1": false,
+    "hit@3": false,
+    "top5": [
+      "db-hog"
+    ],
+    "ranking": [
+      [
+        "db-hog",
+        8.2312
+      ]
+    ]
+  },
+  {
+    "incident": "edge1-taint-toleration-mismatch-001",
+    "culprit": "taint-hog",
+    "namespace": "boutique-quota-cpu",
+    "category": "Scheduling",
+    "fault_type": "TaintTolerationMismatch",
+    "live": true,
+    "signal": true,
+    "hit@1": false,
+    "hit@3": true,
+    "top5": [
+      "db-hog",
+      "taint-hog"
+    ],
+    "ranking": [
+      [
+        "db-hog",
+        13813570754080.668
+      ],
+      [
+        "taint-hog",
+        9.6429
+      ]
+    ]
+  },
+  {
+    "incident": "edge1-cpu-capacity-mismatch-001",
+    "culprit": "cpu-capacity-hog",
+    "namespace": "boutique-quota-cpu",
+    "category": "Scheduling",
+    "fault_type": "CPUCapacityMismatch",
+    "live": true,
+    "signal": true,
+    "hit@1": false,
+    "hit@3": false,
+    "top5": [
+      "db-hog",
+      "taint-hog"
+    ],
+    "ranking": [
+      [
+        "db-hog",
+        1.0952
+      ],
+      [
+        "taint-hog",
+        0.0
+      ]
+    ]
+  },
+  {
+    "incident": "edge1-incorrect-image-reference-001",
+    "culprit": "image-ref-hog",
+    "namespace": "boutique-quota-cpu",
+    "category": "Startup",
+    "fault_type": "IncorrectImageReference",
+    "live": true,
+    "signal": true,
+    "hit@1": false,
+    "hit@3": true,
+    "top5": [
+      "db-hog",
+      "image-ref-hog"
+    ],
+    "ranking": [
+      [
+        "db-hog",
+        3.43
+      ],
+      [
+        "image-ref-hog",
+        3.4255
+      ]
+    ]
+  },
+  {
+    "incident": "edge1-missing-image-pull-secret-001",
+    "culprit": "private-image-hog",
+    "namespace": "boutique-quota-cpu",
+    "category": "Startup",
+    "fault_type": "MissingImagePullSecret",
+    "live": true,
+    "signal": true,
+    "hit@1": false,
+    "hit@3": true,
+    "top5": [
+      "db-hog",
+      "private-image-hog"
+    ],
+    "ranking": [
+      [
+        "db-hog",
+        2.4953
+      ],
+      [
+        "private-image-hog",
+        1.9936
+      ]
+    ]
+  },
+  {
+    "incident": "edge1-missing-secret-binding-001",
+    "culprit": "secret-hog",
+    "namespace": "boutique-quota-cpu",
+    "category": "Startup",
+    "fault_type": "MissingSecretBinding",
+    "live": true,
+    "signal": true,
+    "hit@1": false,
+    "hit@3": false,
+    "top5": [
+      "db-hog"
+    ],
+    "ranking": [
+      [
+        "db-hog",
+        7.9507
+      ]
+    ]
+  },
+  {
+    "incident": "edge1-oomkilled-memory-001",
+    "culprit": "mem-oom-hog",
+    "namespace": "boutique-quota-cpu",
+    "category": "Runtime",
+    "fault_type": "OOMKilled",
+    "live": true,
+    "signal": true,
+    "hit@1": true,
+    "hit@3": true,
+    "top5": [
+      "mem-oom-hog",
+      "db-hog"
+    ],
+    "ranking": [
+      [
+        "mem-oom-hog",
+        6.4725
+      ],
+      [
+        "db-hog",
+        3.5238
+      ]
+    ]
+  },
+  {
+    "incident": "edge1-liveness-probe-incorrect-port-001",
+    "culprit": "probe-hog",
+    "namespace": "boutique-quota-cpu",
+    "category": "Runtime",
+    "fault_type": "LivenessProbeIncorrectPort",
+    "live": true,
+    "signal": true,
+    "hit@1": false,
+    "hit@3": true,
+    "top5": [
+      "db-hog",
+      "probe-hog"
+    ],
+    "ranking": [
+      [
+        "db-hog",
+        1464238499932551.0
+      ],
+      [
+        "probe-hog",
+        3.0827
+      ]
+    ]
+  },
+  {
+    "incident": "edge1-readiness-probe-incorrect-port-001",
+    "culprit": "readiness-hog",
+    "namespace": "boutique-quota-cpu",
+    "category": "Runtime",
+    "fault_type": "ReadinessProbeIncorrectPort",
+    "live": true,
+    "signal": true,
+    "hit@1": false,
+    "hit@3": true,
+    "top5": [
+      "db-hog",
+      "readiness-hog"
+    ],
+    "ranking": [
+      [
+        "db-hog",
+        18.5073
+      ],
+      [
+        "readiness-hog",
+        9.631
+      ]
+    ]
+  },
+  {
+    "incident": "edge1-deployment-zero-replicas-001",
+    "culprit": "db-hog",
+    "namespace": "boutique-quota-cpu",
+    "category": "Runtime",
+    "fault_type": "DeploymentZeroReplicas",
+    "live": false,
+    "hit@1": false,
+    "hit@3": false,
+    "signal": false,
+    "reason": "workload scaled to 0 replicas - no pods, no metrics",
+    "ranking": []
+  },
+  {
+    "incident": "edge1-service-selector-mismatch-001",
+    "culprit": "frontend Service",
+    "namespace": "default",
+    "category": "Service Routing",
+    "fault_type": "ServiceSelectorMismatch",
+    "live": false,
+    "hit@1": false,
+    "hit@3": false,
+    "signal": false,
+    "reason": "Service-routing fault - endpoints empty, no resource anomaly on any pod",
+    "ranking": []
+  },
+  {
+    "incident": "edge1-service-port-mapping-mismatch-001",
+    "culprit": "frontend Service",
+    "namespace": "default",
+    "category": "Service Routing",
+    "fault_type": "ServicePortMappingMismatch",
+    "live": false,
+    "hit@1": false,
+    "hit@3": false,
+    "signal": false,
+    "reason": "Service-routing fault - wrong targetPort, no resource anomaly on any pod",
+    "ranking": []
+  },
+  {
+    "incident": "edge1-service-dns-resolution-failure-001",
+    "culprit": "dns-hog",
+    "namespace": "boutique-quota-cpu",
+    "category": "Service Routing",
+    "fault_type": "ServiceDNSResolutionFailure",
+    "live": true,
+    "signal": true,
+    "hit@1": false,
+    "hit@3": true,
+    "top5": [
+      "db-hog",
+      "dns-hog"
+    ],
+    "ranking": [
+      [
+        "db-hog",
+        7.5963
+      ],
+      [
+        "dns-hog",
+        2.9945
+      ]
+    ]
+  },
+  {
+    "incident": "edge1-pod-cpu-overload-001",
+    "culprit": "stress-hog",
+    "namespace": "boutique-quota-cpu",
+    "category": "Performance",
+    "fault_type": "PodCPUOverload",
+    "live": true,
+    "signal": true,
+    "hit@1": false,
+    "hit@3": true,
+    "top5": [
+      "db-hog",
+      "stress-hog",
+      "dns-hog"
+    ],
+    "ranking": [
+      [
+        "db-hog",
+        5.5066
+      ],
+      [
+        "stress-hog",
+        3.7664
+      ],
+      [
+        "dns-hog",
+        0.0
+      ]
+    ]
+  },
+  {
+    "incident": "edge1-pod-network-delay-001",
+    "culprit": "frontend pod",
+    "namespace": "default",
+    "category": "Performance",
+    "fault_type": "PodNetworkDelay",
+    "live": false,
+    "hit@1": false,
+    "hit@3": false,
+    "signal": false,
+    "reason": "network-latency fault - resource-only MicroRCA has no latency signal without a mesh",
+    "ranking": []
+  }
+]

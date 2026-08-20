@@ -1,0 +1,320 @@
+[
+  {
+    "name": "net-delay-productcatalog",
+    "culprit": "productcatalogservice",
+    "mechanism": "network_latency",
+    "ranking": [
+      [
+        "frontend",
+        0.22718
+      ],
+      [
+        "checkoutservice",
+        0.11509
+      ],
+      [
+        "paymentservice",
+        0.09674
+      ],
+      [
+        "currencyservice",
+        0.08494
+      ],
+      [
+        "cartservice",
+        0.06093
+      ],
+      [
+        "productcatalogservice",
+        0.06042
+      ],
+      [
+        "loadgenerator",
+        0.05027
+      ],
+      [
+        "recommendationservice",
+        0.046
+      ]
+    ],
+    "top5": [
+      "frontend",
+      "checkoutservice",
+      "paymentservice",
+      "currencyservice",
+      "cartservice"
+    ],
+    "hit@1": false,
+    "hit@3": false,
+    "window": [
+      1783569392,
+      1783569723
+    ],
+    "inject_t": 1783569513
+  },
+  {
+    "name": "net-delay-currency",
+    "culprit": "currencyservice",
+    "mechanism": "network_latency",
+    "ranking": [
+      [
+        "frontend",
+        0.26736
+      ],
+      [
+        "checkoutservice",
+        0.14606
+      ],
+      [
+        "currencyservice",
+        0.13462
+      ],
+      [
+        "paymentservice",
+        0.11977
+      ],
+      [
+        "productcatalogservice",
+        0.09895
+      ],
+      [
+        "recommendationservice",
+        0.09342
+      ],
+      [
+        "shippingservice",
+        0.08082
+      ],
+      [
+        "emailservice",
+        0.07016
+      ]
+    ],
+    "top5": [
+      "frontend",
+      "checkoutservice",
+      "currencyservice",
+      "paymentservice",
+      "productcatalogservice"
+    ],
+    "hit@1": false,
+    "hit@3": true,
+    "window": [
+      1783569800,
+      1783570131
+    ],
+    "inject_t": 1783569921
+  },
+  {
+    "name": "net-delay-shipping",
+    "culprit": "shippingservice",
+    "mechanism": "network_latency",
+    "ranking": [
+      [
+        "checkoutservice",
+        0.2209
+      ],
+      [
+        "frontend",
+        0.21319
+      ],
+      [
+        "shippingservice",
+        0.11834
+      ],
+      [
+        "productcatalogservice",
+        0.10224
+      ],
+      [
+        "recommendationservice",
+        0.06803
+      ],
+      [
+        "currencyservice",
+        0.0666
+      ],
+      [
+        "cartservice",
+        0.04509
+      ],
+      [
+        "paymentservice",
+        0.04096
+      ]
+    ],
+    "top5": [
+      "checkoutservice",
+      "frontend",
+      "shippingservice",
+      "productcatalogservice",
+      "recommendationservice"
+    ],
+    "hit@1": false,
+    "hit@3": true,
+    "window": [
+      1783570206,
+      1783570537
+    ],
+    "inject_t": 1783570327
+  },
+  {
+    "name": "net-delay-payment",
+    "culprit": "paymentservice",
+    "mechanism": "network_latency",
+    "ranking": [
+      [
+        "checkoutservice",
+        0.18763
+      ],
+      [
+        "productcatalogservice",
+        0.12261
+      ],
+      [
+        "paymentservice",
+        0.11303
+      ],
+      [
+        "frontend",
+        0.10304
+      ],
+      [
+        "recommendationservice",
+        0.08345
+      ],
+      [
+        "cartservice",
+        0.05394
+      ],
+      [
+        "adservice",
+        0.04761
+      ],
+      [
+        "shippingservice",
+        0.04316
+      ]
+    ],
+    "top5": [
+      "checkoutservice",
+      "productcatalogservice",
+      "paymentservice",
+      "frontend",
+      "recommendationservice"
+    ],
+    "hit@1": false,
+    "hit@3": true,
+    "window": [
+      1783570613,
+      1783570944
+    ],
+    "inject_t": 1783570734
+  },
+  {
+    "name": "cpu-stress-recommendation",
+    "culprit": "recommendationservice",
+    "mechanism": "cpu_stress",
+    "ranking": [
+      [
+        "recommendationservice",
+        0.24768
+      ],
+      [
+        "currencyservice",
+        0.17535
+      ],
+      [
+        "paymentservice",
+        0.16009
+      ],
+      [
+        "cartservice",
+        0.11948
+      ],
+      [
+        "adservice",
+        0.09729
+      ],
+      [
+        "checkoutservice",
+        0.07718
+      ],
+      [
+        "shippingservice",
+        0.06251
+      ],
+      [
+        "frontend",
+        0.06091
+      ]
+    ],
+    "top5": [
+      "recommendationservice",
+      "currencyservice",
+      "paymentservice",
+      "cartservice",
+      "adservice"
+    ],
+    "hit@1": true,
+    "hit@3": true,
+    "window": [
+      1783571020,
+      1783571351
+    ],
+    "inject_t": 1783571141
+  },
+  {
+    "name": "cpu-stress-cartservice",
+    "culprit": "cartservice",
+    "mechanism": "cpu_stress",
+    "ranking": [
+      [
+        "cartservice",
+        0.20669
+      ],
+      [
+        "currencyservice",
+        0.18122
+      ],
+      [
+        "frontend",
+        0.17971
+      ],
+      [
+        "shippingservice",
+        0.16319
+      ],
+      [
+        "paymentservice",
+        0.14206
+      ],
+      [
+        "adservice",
+        0.12555
+      ],
+      [
+        "checkoutservice",
+        0.09245
+      ],
+      [
+        "emailservice",
+        0.03355
+      ]
+    ],
+    "top5": [
+      "cartservice",
+      "currencyservice",
+      "frontend",
+      "shippingservice",
+      "paymentservice"
+    ],
+    "hit@1": true,
+    "hit@3": true,
+    "window": [
+      1783571427,
+      1783571758
+    ],
+    "inject_t": 1783571548
+  }
+]

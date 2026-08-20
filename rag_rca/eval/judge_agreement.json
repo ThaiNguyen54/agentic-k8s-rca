@@ -1,0 +1,496 @@
+{
+  "summary": {
+    "n": 80,
+    "raw_agreement": 0.988,
+    "cohen_kappa": 0.955,
+    "disagreements": 1,
+    "j1_pos_rate": 0.825,
+    "j2_pos_rate": 0.838,
+    "judges": {
+      "j1": "gpt-5 (rca-judge)",
+      "j2": "o4-mini (rca-judge-2)"
+    }
+  },
+  "rows": [
+    {
+      "incident": "edge1-cpu-quota-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-cpu-quota-001",
+      "system": "yours_raw",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-cpu-quota-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-cpu-quota-001",
+      "system": "rcagent",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-memory-quota-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-memory-quota-001",
+      "system": "yours_raw",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-memory-quota-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-memory-quota-001",
+      "system": "rcagent",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-pod-quota-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-pod-quota-001",
+      "system": "yours_raw",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-pod-quota-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-pod-quota-001",
+      "system": "rcagent",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-missing-sa-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-missing-sa-001",
+      "system": "yours_raw",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-missing-sa-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-missing-sa-001",
+      "system": "rcagent",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-node-selector-mismatch-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-node-selector-mismatch-001",
+      "system": "yours_raw",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-node-selector-mismatch-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 0,
+      "j2_o4mini": 0
+    },
+    {
+      "incident": "edge1-node-selector-mismatch-001",
+      "system": "rcagent",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-node-affinity-mismatch-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-node-affinity-mismatch-001",
+      "system": "yours_raw",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-node-affinity-mismatch-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-node-affinity-mismatch-001",
+      "system": "rcagent",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-taint-toleration-mismatch-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-taint-toleration-mismatch-001",
+      "system": "yours_raw",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-taint-toleration-mismatch-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-taint-toleration-mismatch-001",
+      "system": "rcagent",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-cpu-capacity-mismatch-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-cpu-capacity-mismatch-001",
+      "system": "yours_raw",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-cpu-capacity-mismatch-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-cpu-capacity-mismatch-001",
+      "system": "rcagent",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-incorrect-image-reference-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-incorrect-image-reference-001",
+      "system": "yours_raw",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-incorrect-image-reference-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-incorrect-image-reference-001",
+      "system": "rcagent",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-missing-image-pull-secret-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 0,
+      "j2_o4mini": 0
+    },
+    {
+      "incident": "edge1-missing-image-pull-secret-001",
+      "system": "yours_raw",
+      "j1_gpt5": 0,
+      "j2_o4mini": 0
+    },
+    {
+      "incident": "edge1-missing-image-pull-secret-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 0,
+      "j2_o4mini": 0
+    },
+    {
+      "incident": "edge1-missing-image-pull-secret-001",
+      "system": "rcagent",
+      "j1_gpt5": 0,
+      "j2_o4mini": 0
+    },
+    {
+      "incident": "edge1-missing-secret-binding-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-missing-secret-binding-001",
+      "system": "yours_raw",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-missing-secret-binding-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-missing-secret-binding-001",
+      "system": "rcagent",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-oomkilled-memory-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 0,
+      "j2_o4mini": 0
+    },
+    {
+      "incident": "edge1-oomkilled-memory-001",
+      "system": "yours_raw",
+      "j1_gpt5": 0,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-oomkilled-memory-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 0,
+      "j2_o4mini": 0
+    },
+    {
+      "incident": "edge1-oomkilled-memory-001",
+      "system": "rcagent",
+      "j1_gpt5": 0,
+      "j2_o4mini": 0
+    },
+    {
+      "incident": "edge1-liveness-probe-incorrect-port-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-liveness-probe-incorrect-port-001",
+      "system": "yours_raw",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-liveness-probe-incorrect-port-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-liveness-probe-incorrect-port-001",
+      "system": "rcagent",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-readiness-probe-incorrect-port-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-readiness-probe-incorrect-port-001",
+      "system": "yours_raw",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-readiness-probe-incorrect-port-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-readiness-probe-incorrect-port-001",
+      "system": "rcagent",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-deployment-zero-replicas-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-deployment-zero-replicas-001",
+      "system": "yours_raw",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-deployment-zero-replicas-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-deployment-zero-replicas-001",
+      "system": "rcagent",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-service-selector-mismatch-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-service-selector-mismatch-001",
+      "system": "yours_raw",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-service-selector-mismatch-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-service-selector-mismatch-001",
+      "system": "rcagent",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-service-port-mapping-mismatch-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-service-port-mapping-mismatch-001",
+      "system": "yours_raw",
+      "j1_gpt5": 0,
+      "j2_o4mini": 0
+    },
+    {
+      "incident": "edge1-service-port-mapping-mismatch-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-service-port-mapping-mismatch-001",
+      "system": "rcagent",
+      "j1_gpt5": 0,
+      "j2_o4mini": 0
+    },
+    {
+      "incident": "edge1-service-dns-resolution-failure-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-service-dns-resolution-failure-001",
+      "system": "yours_raw",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-service-dns-resolution-failure-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-service-dns-resolution-failure-001",
+      "system": "rcagent",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-pod-cpu-overload-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-pod-cpu-overload-001",
+      "system": "yours_raw",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-pod-cpu-overload-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 0,
+      "j2_o4mini": 0
+    },
+    {
+      "incident": "edge1-pod-cpu-overload-001",
+      "system": "rcagent",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-pod-network-delay-001",
+      "system": "yours_distilled",
+      "j1_gpt5": 0,
+      "j2_o4mini": 0
+    },
+    {
+      "incident": "edge1-pod-network-delay-001",
+      "system": "yours_raw",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    },
+    {
+      "incident": "edge1-pod-network-delay-001",
+      "system": "rcacopilot",
+      "j1_gpt5": 0,
+      "j2_o4mini": 0
+    },
+    {
+      "incident": "edge1-pod-network-delay-001",
+      "system": "rcagent",
+      "j1_gpt5": 1,
+      "j2_o4mini": 1
+    }
+  ]
+}

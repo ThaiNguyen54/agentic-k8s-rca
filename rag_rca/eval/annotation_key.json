@@ -1,0 +1,242 @@
+[
+  {
+    "case_id": "C000",
+    "system": "yours_raw",
+    "incident": "edge1-liveness-probe-incorrect-port-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C001",
+    "system": "rcagent",
+    "incident": "edge1-service-selector-mismatch-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C002",
+    "system": "rcagent",
+    "incident": "edge1-node-affinity-mismatch-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C003",
+    "system": "rcacopilot",
+    "incident": "edge1-liveness-probe-incorrect-port-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C004",
+    "system": "rcacopilot",
+    "incident": "edge1-cpu-capacity-mismatch-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C005",
+    "system": "rcagent",
+    "incident": "edge1-readiness-probe-incorrect-port-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C006",
+    "system": "yours_distilled",
+    "incident": "edge1-pod-quota-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C007",
+    "system": "rcacopilot",
+    "incident": "edge1-oomkilled-memory-001",
+    "judge_hit": false,
+    "judge_recall": 0.0,
+    "judge_precision": 0.0
+  },
+  {
+    "case_id": "C008",
+    "system": "yours_raw",
+    "incident": "edge1-deployment-zero-replicas-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C009",
+    "system": "rcagent",
+    "incident": "edge1-missing-image-pull-secret-001",
+    "judge_hit": false,
+    "judge_recall": 0.0,
+    "judge_precision": 0.0
+  },
+  {
+    "case_id": "C010",
+    "system": "rcagent",
+    "incident": "edge1-missing-sa-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C011",
+    "system": "yours_distilled",
+    "incident": "edge1-pod-cpu-overload-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C012",
+    "system": "rcagent",
+    "incident": "edge1-deployment-zero-replicas-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C013",
+    "system": "rcacopilot",
+    "incident": "edge1-missing-image-pull-secret-001",
+    "judge_hit": false,
+    "judge_recall": 0.0,
+    "judge_precision": 0.0
+  },
+  {
+    "case_id": "C014",
+    "system": "rcacopilot",
+    "incident": "edge1-missing-secret-binding-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C015",
+    "system": "rcacopilot",
+    "incident": "edge1-service-selector-mismatch-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C016",
+    "system": "yours_raw",
+    "incident": "edge1-taint-toleration-mismatch-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C017",
+    "system": "yours_distilled",
+    "incident": "edge1-deployment-zero-replicas-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C018",
+    "system": "yours_distilled",
+    "incident": "edge1-pod-network-delay-001",
+    "judge_hit": false,
+    "judge_recall": 0.0,
+    "judge_precision": 0.0
+  },
+  {
+    "case_id": "C019",
+    "system": "yours_raw",
+    "incident": "edge1-cpu-quota-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C020",
+    "system": "rcacopilot",
+    "incident": "edge1-service-dns-resolution-failure-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C021",
+    "system": "yours_raw",
+    "incident": "edge1-readiness-probe-incorrect-port-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C022",
+    "system": "rcacopilot",
+    "incident": "edge1-node-selector-mismatch-001",
+    "judge_hit": false,
+    "judge_recall": 0.0,
+    "judge_precision": 0.0
+  },
+  {
+    "case_id": "C023",
+    "system": "rcagent",
+    "incident": "edge1-service-port-mapping-mismatch-001",
+    "judge_hit": false,
+    "judge_recall": 0.0,
+    "judge_precision": 0.0
+  },
+  {
+    "case_id": "C024",
+    "system": "rcagent",
+    "incident": "edge1-node-selector-mismatch-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C025",
+    "system": "yours_distilled",
+    "incident": "edge1-node-affinity-mismatch-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C026",
+    "system": "rcagent",
+    "incident": "edge1-missing-secret-binding-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C027",
+    "system": "rcagent",
+    "incident": "edge1-oomkilled-memory-001",
+    "judge_hit": false,
+    "judge_recall": 0.0,
+    "judge_precision": 0.0
+  },
+  {
+    "case_id": "C028",
+    "system": "yours_raw",
+    "incident": "edge1-incorrect-image-reference-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  },
+  {
+    "case_id": "C029",
+    "system": "yours_raw",
+    "incident": "edge1-service-selector-mismatch-001",
+    "judge_hit": true,
+    "judge_recall": 1.0,
+    "judge_precision": 1.0
+  }
+]

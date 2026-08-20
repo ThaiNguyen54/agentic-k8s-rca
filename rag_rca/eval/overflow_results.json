@@ -1,0 +1,62 @@
+[
+  {
+    "size": "~80k",
+    "noise": 1000,
+    "mode": "raw",
+    "prompt_tokens": 75014,
+    "success": true,
+    "latency_s": 4.0,
+    "recall": 0.0,
+    "precision": 0.0
+  },
+  {
+    "size": "~80k",
+    "noise": 1000,
+    "mode": "distilled",
+    "prompt_tokens": 1048,
+    "success": true,
+    "latency_s": 1.9,
+    "recall": 0.0,
+    "precision": 0.0
+  },
+  {
+    "size": "~180k",
+    "noise": 2400,
+    "mode": "raw",
+    "prompt_tokens": 178264,
+    "success": true,
+    "latency_s": 2.8,
+    "recall": 0.0,
+    "precision": 0.0
+  },
+  {
+    "size": "~180k",
+    "noise": 2400,
+    "mode": "distilled",
+    "prompt_tokens": 1048,
+    "success": true,
+    "latency_s": 2.0,
+    "recall": 0.0,
+    "precision": 0.0
+  },
+  {
+    "size": "~290k",
+    "noise": 3900,
+    "mode": "raw",
+    "prompt_tokens": 288889,
+    "success": true,
+    "latency_s": 3.7,
+    "recall": 0.0,
+    "precision": 0.0
+  },
+  {
+    "size": "~290k",
+    "noise": 3900,
+    "mode": "distilled",
+    "prompt_tokens": 1048,
+    "success": true,
+    "latency_s": 2.0,
+    "recall": 0.0,
+    "precision": 0.0
+  }
+]

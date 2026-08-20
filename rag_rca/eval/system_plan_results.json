@@ -1,0 +1,180 @@
+[
+  {
+    "scenario": "deployment-zero-replicas",
+    "fault_object": "deployment/rec-zero",
+    "fault_took_effect": true,
+    "pipeline": {
+      "stage": "validator",
+      "error": "HTTP Error 500: Internal Server Error"
+    },
+    "correct_remediation": false,
+    "note": "pipeline failed: {'stage': 'validator', 'error': 'HTTP Error 500: Internal Server Error'}"
+  },
+  {
+    "scenario": "incorrect-image-reference",
+    "fault_object": "deployment/rec-image",
+    "fault_took_effect": true,
+    "pipeline": {
+      "rca_lat": 19.0,
+      "val_lat": 22.2,
+      "rca_head": "Problem summary\n- The replica pod for deployment/rec-image is failing to start because the container image nginx:does-not-exist-9999 cannot be pulled (ImagePullBackOff / ErrImagePull).\n\nScope and affe",
+      "plan": {
+        "summary": "The pod fails due to a non-existent image tag. Remediation is to restore a valid image (either roll back to the known-good tag, or publish/update the intended image and redeploy), then verify the rollout and monitor.",
+        "steps": [
+          "Confirm the intended image: check the deployment manifest in source control or ask the application owner to confirm the desired image tag for deployment/rec-image in namespace rca-recovery-test.",
+          "If the desired image is the previously-working nginx:1.27, roll back or update the deployment to that tag: kubectl -n rca-recovery-test set image deployment/rec-image c=nginx:1.27 --record && kubectl -n rca-recovery-test rollout status deployment/rec-image",
+          "Alternatively, if nginx:does-not-exist-9999 is the intended image, ensure the image is built and pushed to a reachable registry under the same repository name used by the Deployment. If using a private registry, create or verify imagePullSecrets and update the Deployment to reference the correct repository (example: yourregistry.example.com/yourorg/yourimage:does-not-exist-9999) and then kubectl -n rca-recovery-test set image ... && kubectl -n rca-recovery-test rollout status ...",
+          "After changing the image or rolling back, validate success: kubectl -n rca-recovery-test get pods -o wide (ensure pod enters Running and Ready), kubectl -n rca-recovery-test describe pod <podname> for any residual events, and kubectl -n rca-recovery-test rollout status deployment/rec-image to confirm availability.",
+          "If image pull failures persist, collect troubleshooting info: kubectl -n rca-recovery-test describe pod <podname> (look at events), examine node/container runtime logs for detailed pull errors, and verify registry connectivity and credentials (docker login / imagePullSecrets).",
+          "Consider a short-term mitigation if immediate rollback or image publish is not possible: scale the deployment to 0 to avoid repeated failing pod churn (kubectl -n rca-recovery-test scale deployment/rec-image --replicas=0) and coordinate with the application owner for the intended image to deploy.",
+          "After remediation, implement preventive steps: add CI validation that image tags referenced by manifests exist before applying, and/or pin images to explicit, tested tags; consider image pull policy and ownership of registry/repo naming to avoid accidental references to non-existent public tags."
+        ],
+        "risk": "low",
+        "requiresHumanApproval": true
+      },
+      "rca_only": {
+        "summary": "Problem summary\n- The replica pod for deployment/rec-image is failing to start because the container image nginx:does-not-exist-9999 cannot be pulled (ImagePullBackOff / ErrImagePull).\n\nScope and affected resources\n- Cluster/context: edge1\n- Namespace: rca-recovery-test\n- Primary object: deployment/rec-image (1 desired replica)\n- Affected Pod: pod/rec-image-67d4c7448c-8sr6c (0/1, ErrImagePull)\n- R",
+        "steps": []
+      }
+    },
+    "rca_only_proposes_expected": true,
+    "plan_summary": "The pod fails due to a non-existent image tag. Remediation is to restore a valid image (either roll back to the known-good tag, or publish/update the intended image and redeploy), then verify the roll",
+    "plan_steps": [
+      "Confirm the intended image: check the deployment manifest in source control or ask the application owner to confirm the desired image tag for deployment/rec-ima",
+      "If the desired image is the previously-working nginx:1.27, roll back or update the deployment to that tag: kubectl -n rca-recovery-test set image deployment/rec",
+      "Alternatively, if nginx:does-not-exist-9999 is the intended image, ensure the image is built and pushed to a reachable registry under the same repository name u",
+      "After changing the image or rolling back, validate success: kubectl -n rca-recovery-test get pods -o wide (ensure pod enters Running and Ready), kubectl -n rca-",
+      "If image pull failures persist, collect troubleshooting info: kubectl -n rca-recovery-test describe pod <podname> (look at events), examine node/container runti",
+      "Consider a short-term mitigation if immediate rollback or image publish is not possible: scale the deployment to 0 to avoid repeated failing pod churn (kubectl "
+    ],
+    "expected_action": "fix_image",
+    "plan_proposes_expected": true,
+    "match_evidence": "matched 'image'",
+    "recovered": true,
+    "time_to_recover_s": 5.2,
+    "correct_remediation": true
+  },
+  {
+    "scenario": "readiness-probe-incorrect-port",
+    "fault_object": "deployment/rec-probe",
+    "fault_took_effect": true,
+    "pipeline": {
+      "rca_lat": 15.3,
+      "val_lat": 33.1,
+      "rca_head": "Problem summary\n- The rec-probe Deployment has pods Running but not Ready / Available. The deployment's readiness probe is configured to probe HTTP port 8081, while the container exposes port 80. This",
+      "plan": {
+        "summary": "Fix the readinessProbe port mismatch (or align the application to the probe). Update Deployment to probe the actual container port (80) or make the app listen on 8081, then verify rollout and readiness.",
+        "steps": [
+          "Confirm which port the application actually listens on inside the running pod: kubectl exec -n rca-recovery-test rec-probe-7b9659b75-mt7wv -- curl -sS -I http://127.0.0.1:80/ || kubectl exec -n rca-recovery-test rec-probe-7b9659b75-mt7wv -- curl -sS -I http://127.0.0.1:8081/ (expect HTTP 200 on the real serving port).",
+          "If the app listens on port 80 (most likely): update the Deployment's readinessProbe to use port 80. Example patch: kubectl patch deployment rec-probe -n rca-recovery-test --type='json' -p='[{\"op\":\"replace\",\"path\":\"/spec/template/spec/containers/0/readinessProbe/httpGet/port\",\"value\":80}]'",
+          "Alternative to patching: run kubectl edit deployment rec-probe -n rca-recovery-test and change the readinessProbe httpGet port from 8081 to 80, then save to trigger a rolling update.",
+          "After applying the fix, wait for the rollout to finish: kubectl rollout status deployment/rec-probe -n rca-recovery-test --watch ; then verify the deployment is available: kubectl get deploy rec-probe -n rca-recovery-test -o wide (should show 1/1 READY, AVAILABLE).",
+          "Verify the pod readiness and behavior: kubectl get pods -l app=rec-probe -n rca-recovery-test -o wide ; kubectl describe pod <pod-name> -n rca-recovery-test and confirm Ready condition is True.",
+          "If the application is intended to listen on 8081 instead: modify the container (application config or image) to bind 8081, update containerPort/documentation, or change the image and deploy; then re-run rollout and verification steps.",
+          "If readiness still fails after aligning ports: collect pod logs and events for debugging: kubectl logs -n rca-recovery-test <pod> -c c ; kubectl get events -n rca-recovery-test --sort-by='.metadata.creationTimestamp' ; consider rolling back: kubectl rollout undo deployment/rec-probe -n rca-recovery-test.",
+          "Post-incident actions: add a CI/PR validation that readinessProbe port matches the container/app listening port (or add an E2E check to exercise the probe path), and add a runbook entry describing this troubleshooting and the patch procedure."
+        ],
+        "risk": "low",
+        "requiresHumanApproval": true
+      },
+      "rca_only": {
+        "summary": "Problem summary\n- The rec-probe Deployment has pods Running but not Ready / Available. The deployment's readiness probe is configured to probe HTTP port 8081, while the container exposes port 80. This causes readiness failures and the deployment never becomes available.\n\nScope and affected resources\n- deployment/rec-probe (namespace: rca-recovery-test)\n- pod/rec-probe-7b9659b75-mt7wv (and prior re",
+        "steps": []
+      }
+    },
+    "rca_only_proposes_expected": true,
+    "plan_summary": "Fix the readinessProbe port mismatch (or align the application to the probe). Update Deployment to probe the actual container port (80) or make the app listen on 8081, then verify rollout and readines",
+    "plan_steps": [
+      "Confirm which port the application actually listens on inside the running pod: kubectl exec -n rca-recovery-test rec-probe-7b9659b75-mt7wv -- curl -sS -I http:/",
+      "If the app listens on port 80 (most likely): update the Deployment's readinessProbe to use port 80. Example patch: kubectl patch deployment rec-probe -n rca-rec",
+      "Alternative to patching: run kubectl edit deployment rec-probe -n rca-recovery-test and change the readinessProbe httpGet port from 8081 to 80, then save to tri",
+      "After applying the fix, wait for the rollout to finish: kubectl rollout status deployment/rec-probe -n rca-recovery-test --watch ; then verify the deployment is",
+      "Verify the pod readiness and behavior: kubectl get pods -l app=rec-probe -n rca-recovery-test -o wide ; kubectl describe pod <pod-name> -n rca-recovery-test and",
+      "If the application is intended to listen on 8081 instead: modify the container (application config or image) to bind 8081, update containerPort/documentation, o"
+    ],
+    "expected_action": "fix_probe",
+    "plan_proposes_expected": true,
+    "match_evidence": "matched 'readiness'",
+    "recovered": true,
+    "time_to_recover_s": 5.2,
+    "correct_remediation": true
+  },
+  {
+    "scenario": "service-selector-mismatch",
+    "fault_object": "service/rec-svc-svc",
+    "fault_took_effect": true,
+    "pipeline": {
+      "rca_lat": 13.8,
+      "val_lat": 30.3,
+      "rca_head": "Problem summary\n- service/rec-svc-svc has no endpoints because its selector is app=does-not-exist, which does not match any pods in the namespace.\n\nScope and affected resources\n- service/rec-svc-svc (",
+      "plan": {
+        "summary": "Fix the Service selector so it matches the deployment/pod labels (or, less recommended, change pod labels to match the Service). Validate endpoints populate and test traffic. Persist the fix in source control.",
+        "steps": [
+          "Inspect current objects to confirm state: kubectl get svc rec-svc-svc -n rca-recovery-test -o yaml; kubectl get endpoints rec-svc-svc -n rca-recovery-test -o yaml; kubectl get pods -l app=rec-svc -n rca-recovery-test -o wide; kubectl describe pod rec-svc-74f7789f96-cg64p -n rca-recovery-test"
+        ],
+        "risk": "low",
+        "requiresHumanApproval": true
+      },
+      "rca_only": {
+        "summary": "Problem summary\n- service/rec-svc-svc has no endpoints because its selector is app=does-not-exist, which does not match any pods in the namespace.\n\nScope and affected resources\n- service/rec-svc-svc (Namespace: rca-recovery-test)\n- endpoints/rec-svc-svc (empty)\n- deployment/pods: rec-svc deployment and pod(s) (label app=rec-svc) \u2014 these are healthy but not selected by the Service\n\nEvidence collect",
+        "steps": []
+      }
+    },
+    "rca_only_proposes_expected": true,
+    "plan_summary": "Fix the Service selector so it matches the deployment/pod labels (or, less recommended, change pod labels to match the Service). Validate endpoints populate and test traffic. Persist the fix in source",
+    "plan_steps": [
+      "Inspect current objects to confirm state: kubectl get svc rec-svc-svc -n rca-recovery-test -o yaml; kubectl get endpoints rec-svc-svc -n rca-recovery-test -o ya"
+    ],
+    "expected_action": "fix_selector",
+    "plan_proposes_expected": true,
+    "match_evidence": "matched 'service selector so it matches the deployment/pod labels (or, less recommended, change pod labels to match'",
+    "recovered": true,
+    "time_to_recover_s": 0.1,
+    "correct_remediation": true
+  },
+  {
+    "scenario": "node-unschedulable-cordon",
+    "fault_object": "node/edge1-control-plane-lqbdq",
+    "fault_took_effect": true,
+    "pipeline": {
+      "rca_lat": 19.2,
+      "val_lat": 39.1,
+      "rca_head": "Problem summary\n- A pod (deployment/rec-node) is Pending because the target control-plane node edge1-control-plane-lqbdq is marked Unschedulable (node.kubernetes.io/unschedulable:NoSchedule), preventi",
+      "plan": {
+        "summary": "The rec-node pod is Pending because the intended control-plane node (edge1-control-plane-lqbdq) is cordoned/unschedulable and the other node is excluded by the pod's node affinity/selector. Remediation is to either make the control-plane node schedulable or relax the pod's node affinity so it can schedule onto the available worker node.",
+        "steps": [
+          "Review and confirm current state (using the provided evidence or run these to re-check): kubectl -n rca-recovery-test get pod rec-node-84f869747-m4jqj -o wide; kubectl -n rca-recovery-test describe pod rec-node-84f869747-m4jqj; kubectl get node edge1-control-plane-lqbdq -o wide; kubectl describe node edge1-control-plane-lqbdq",
+          "If it is acceptable to schedule user workloads on the control-plane node, uncordon the node so the scheduler can place the pod: kubectl uncordon edge1-control-plane-lqbdq",
+          "Watch the pod schedule and become Ready: kubectl -n rca-recovery-test get pods -o wide -w (or kubectl describe pod rec-node-84f869747-m4jqj after a short wait). If the pod becomes Running, verify application functionality.",
+          "If scheduling on the control-plane is NOT acceptable, update the deployment to allow scheduling on the available worker node (edge1-md-0-tvqjw-8cwdf) by removing or changing the nodeSelector/nodeAffinity on the rec-node deployment. Example (manual edit): kubectl -n rca-recovery-test edit deployment rec-node and remove/adjust spec.template.spec.affinity or spec.template.spec.nodeSelector so it can match the worker node; then rollout restart if needed: kubectl -n rca-recovery-test rollout restart deployment/rec-node",
+          "As an alternative to changing affinity, explicitly target the worker node by patching nodeSelector if that is acceptable: kubectl -n rca-recovery-test patch deployment rec-node --type='strategic' -p '{\"spec\":{\"template\":{\"spec\":{\"nodeSelector\":{\"kubernetes.io/hostname\":\"edge1-md-0-tvqjw-8cwdf\"}}}}}'",
+          "If you uncordoned the control-plane node and see adverse effects (resource contention, control-plane instability), cordon it back: kubectl cordon edge1-control-plane-lqbdq and then revert the deployment affinity changes or choose a different remediation.",
+          "After remediation, verify cluster health and scheduling: kubectl get nodes; kubectl -n rca-recovery-test get pods -o wide; kubectl get events -n rca-recovery-test --sort-by=.metadata.creationTimestamp",
+          "Record the action and rationale (who uncordoned or changed affinity) and monitor for any further scheduling failures or resource pressure on nodes."
+        ],
+        "risk": "medium",
+        "requiresHumanApproval": true
+      },
+      "rca_only": {
+        "summary": "Problem summary\n- A pod (deployment/rec-node) is Pending because the target control-plane node edge1-control-plane-lqbdq is marked Unschedulable (node.kubernetes.io/unschedulable:NoSchedule), preventing scheduling onto that node.\n\nScope and affected resources\n- Cluster/context: edge1 (namespace rca-recovery-test)\n- Affected workload: deployment/rec-node -> pod/rec-node-84f869747-m4jqj (Pending)\n- ",
+        "steps": []
+      }
+    },
+    "rca_only_proposes_expected": false,
+    "plan_summary": "The rec-node pod is Pending because the intended control-plane node (edge1-control-plane-lqbdq) is cordoned/unschedulable and the other node is excluded by the pod's node affinity/selector. Remediatio",
+    "plan_steps": [
+      "Review and confirm current state (using the provided evidence or run these to re-check): kubectl -n rca-recovery-test get pod rec-node-84f869747-m4jqj -o wide; ",
+      "If it is acceptable to schedule user workloads on the control-plane node, uncordon the node so the scheduler can place the pod: kubectl uncordon edge1-control-p",
+      "Watch the pod schedule and become Ready: kubectl -n rca-recovery-test get pods -o wide -w (or kubectl describe pod rec-node-84f869747-m4jqj after a short wait).",
+      "If scheduling on the control-plane is NOT acceptable, update the deployment to allow scheduling on the available worker node (edge1-md-0-tvqjw-8cwdf) by removin",
+      "As an alternative to changing affinity, explicitly target the worker node by patching nodeSelector if that is acceptable: kubectl -n rca-recovery-test patch dep",
+      "If you uncordoned the control-plane node and see adverse effects (resource contention, control-plane instability), cordon it back: kubectl cordon edge1-control-"
+    ],
+    "expected_action": "uncordon",
+    "plan_proposes_expected": true,
+    "match_evidence": "matched 'make the control-plane node schedulable'",
+    "recovered": true,
+    "time_to_recover_s": 10.3,
+    "correct_remediation": true
+  }
+]

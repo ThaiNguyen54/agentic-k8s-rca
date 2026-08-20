@@ -1,0 +1,37 @@
+[
+  {
+    "scenario": "deployment-zero-replicas",
+    "fault_took_effect": true,
+    "recovered": true,
+    "time_to_recover_s": 5.2,
+    "correct_remediation": true
+  },
+  {
+    "scenario": "incorrect-image-reference",
+    "fault_took_effect": true,
+    "recovered": true,
+    "time_to_recover_s": 10.3,
+    "correct_remediation": true
+  },
+  {
+    "scenario": "readiness-probe-incorrect-port",
+    "fault_took_effect": true,
+    "recovered": true,
+    "time_to_recover_s": 5.2,
+    "correct_remediation": true
+  },
+  {
+    "scenario": "service-selector-mismatch",
+    "fault_took_effect": true,
+    "recovered": true,
+    "time_to_recover_s": 0.1,
+    "correct_remediation": true
+  },
+  {
+    "scenario": "node-unschedulable-cordon",
+    "fault_took_effect": false,
+    "recovered": true,
+    "time_to_recover_s": 0.1,
+    "correct_remediation": false
+  }
+]
