@@ -1,0 +1,15 @@
+Evidence-Grounded Agent Framework for Kubernetes Fault Diagnosis and Remediation Planning
+(agentic-k8s-rca)
+Copyright 2026 Nguyen Duc Thong Thai, Phuong Bac Ta, Younghan Kim
+Distributed Cloud & Network Lab, Soongsil University
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+The Go projects webhook-receiver/ and multi-cluster-fault-controller/ were
+scaffolded with Kubebuilder (https://github.com/kubernetes-sigs/kubebuilder),
+licensed under the Apache License, Version 2.0; the generated file headers are
+kept as-is.
+
+This repository does not bundle third-party source code. Third-party
+dependencies, models and platforms are obtained separately at install time
+and remain under their own licenses; see THIRD_PARTY_LICENSES.md.

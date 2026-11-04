@@ -184,6 +184,10 @@ Scripts, pre-registrations and saved results are in [`rag_rca/eval/`](rag_rca/ev
 
 `Kubernetes` · `LLM agents` · `Model Context Protocol (MCP)` · `Retrieval-Augmented Generation` · `Qdrant` · `BAAI/bge-m3` + `bge-reranker-v2-m3` · `Kagent` · `Go / Kubebuilder` · `Python / FastAPI` · `Chaos Mesh` · `LitmusChaos`
 
+## License
+
+Licensed under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for attribution and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for the licenses of dependencies, models and platforms.
+
 ## Author
 
 **Nguyen Duc Thong Thai** — M.S., School of Electronic Engineering, Soongsil University (Distributed Cloud & Network Lab).
