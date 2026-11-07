@@ -77,7 +77,8 @@ def main():
                      "skill_invoked": rec.get("skill_invoked", ""),
                      "rca_tool_calls": len(rec.get("rca_tool_calls") or []),
                      "validator_tool_calls": len(rec.get("validator_tool_calls") or []),
-                     "validator_decision": verdict or "",
+                     "validator_decision": verdict or "", "efca": rec.get("efca", ""),
+                     "attempt": rec.get("attempt", 0),
                      **{f"loc:{k}": v[0] for k, v in res.items()}, **{f"strict:{k}": v[1] for k, v in res.items()}})
 
     keys = sorted({k for r in rows for k in r}, key=lambda k: (":" in k, k))
@@ -141,7 +142,9 @@ def main():
                 mean_rca_tool_calls=round(st.mean(r["rca_tool_calls"] for r in sel), 1) if sel else None,
                 mean_validator_tool_calls=round(st.mean(r["validator_tool_calls"] for r in sel), 1) if sel else None,
                 validator_decisions={d: sum(r["validator_decision"] == d for r in sel)
-                                     for d in sorted({r["validator_decision"] for r in sel})})
+                                     for d in sorted({r["validator_decision"] for r in sel})},
+                efca={e: sum(r["efca"] == e for r in sel) for e in sorted({r["efca"] for r in sel})},
+                runs_needing_rerun=sum(int(r["attempt"] or 0) > 0 for r in sel))
     json.dump(out, open(os.path.join(HERE, "summary.json"), "w"), indent=2)
     print(json.dumps(out, indent=2))
 

@@ -98,3 +98,34 @@ cannot parse is incorrect.
   its new pod cannot schedule, as in the README.
 - **The validator's skills are reattached** (they were removed for the E5
   no-skill condition) so that the validation skill can run.
+
+## Amendments after the smoke test, before the full run (2026-11-07)
+The smoke test (1-1 and 3-2, one injection each, kept in `smoke/` and **not**
+used in any result) found three problems with the procedure. No metric, rubric,
+run count or timeout changed.
+
+1. **The agents' MCP tools had no kubeconfig.** The shared `k8s-multi-cluster`
+   server has none. As in E5, a copy, `k8s-multi-cluster-live`, with the
+   existing `multi-cluster-kubeconfig` secret now serves `k8s-agent` and
+   `validator` (`setup_mcp_live.sh`; undone by `restore_cluster.sh`).
+2. **Kagent runtime 500s are infrastructure failures.** The validator finished
+   its model calls, then kagent's runner failed while closing its MCP toolsets
+   ("Attempted to exit a cancel scope …") and returned HTTP 500.
+   - Such errors (HTTP 500, connection errors) mark the attempt as an
+     infrastructure failure. It is kept under `attempts/` and the injection is
+     rerun, up to 3 attempts in total.
+   - If all 3 fail, the last attempt is the run and counts as a miss.
+   - The number of reruns is reported.
+3. **EFCA runs on CPU.** The evidence API has no GPU: distillation took 93 s
+   for 1-1 and exceeded the Orchestrator's 300 s limit for 3-2, which then
+   used the raw collect-all dump. The abandoned request kept computing for
+   about 4 more minutes.
+   - Before each injection the harness waits until the evidence API is idle
+     (under 0.5 core for 15 s). This wait is outside diagnosis time.
+   - EFCA latency counts in diagnosis time. Each run records whether EFCA
+     distilled or fell back to the raw dump.
+   - Decided with the author: run on this hardware as-is.
+
+Also observed: the RCA agent answered from the embedded evidence without
+calling tools in both smoke runs. This is the agent's own behaviour and is
+recorded per run.

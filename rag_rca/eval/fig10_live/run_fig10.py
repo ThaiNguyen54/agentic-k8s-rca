@@ -35,6 +35,7 @@ MODEL = "gpt-oss-120b"
 ORDER_SEED = 20261107
 SETTLE_S = 60
 TIMEOUT_S = 600
+MAX_ATTEMPTS = 3  # 1 + 2 reruns for kagent/infrastructure errors (amendment after the smoke test)
 # Generic alert: identical for every configuration (spec rule 1).
 ALERT_LABELS = {"cluster": "edge2", "cluster_context": "edge2", "namespace": "onlineboutique",
                 "fault_type": "ApplicationDegraded", "fault_object": "", "root_cause_hint": ""}
@@ -120,9 +121,45 @@ def orch_prompts(log_text):
     return {"rca_prompt": grab("RCA"), "validator_prompt": grab("validator")}
 
 
-def one(cfg, k, order_index):
-    rec = {"config": cfg, "run": k, "order_index": order_index, "model": MODEL,
+def efca_outcome(log_text):
+    m = re.search(r"\[evidence\] distilled evidence .*?duration=(\S+)", log_text)
+    if m:
+        return {"efca": "distilled", "efca_duration": m.group(1)}
+    if re.search(r"\[evidence\] distill request failed", log_text):
+        return {"efca": "fallback_raw_timeout"}
+    return {"efca": "unknown"}
+
+
+def evidence_api_idle(pid_file="/proc/{}/stat", max_wait=1200, below=0.5, quiet_s=15):
+    """Wait until the evidence API process uses < `below` cores for `quiet_s` s, so an
+    abandoned distill from the previous run does not slow this one. Returns seconds waited."""
+    pid = os.environ.get("EVIDENCE_API_PID")
+    if not pid:
+        return 0.0
+    tick = os.sysconf("SC_CLK_TCK")
+
+    def cpu():
+        f = open(pid_file.format(pid)).read().rsplit(")", 1)[1].split()
+        return (int(f[11]) + int(f[12])) / tick
+    t0 = time.time()
+    quiet = 0.0
+    while time.time() - t0 < max_wait:
+        c0 = cpu()
+        time.sleep(5)
+        busy = (cpu() - c0) / 5
+        quiet = quiet + 5 if busy < below else 0.0
+        if quiet >= quiet_s:
+            break
+    return round(time.time() - t0, 1)
+
+
+INFRA = re.compile(r"status 500|Internal Server Error|connection refused|ConnectionError|RemoteDisconnected")
+
+
+def one(cfg, k, order_index, attempt=0):
+    rec = {"config": cfg, "run": k, "order_index": order_index, "attempt": attempt, "model": MODEL,
            "settle_s": SETTLE_S, "timeout_s": TIMEOUT_S}
+    rec["evidence_api_wait_s"] = evidence_api_idle()
     rec["reset_before"] = F.reset()
     if not rec["reset_before"]["healthy"]:
         raise RuntimeError(f"baseline not healthy before {cfg} r{k}: {rec['reset_before']}")
@@ -148,7 +185,9 @@ def one(cfg, k, order_index):
     if log_path and os.path.exists(log_path):
         with open(log_path) as fh:
             fh.seek(log_off)
-            prop.update(orch_prompts(fh.read()))
+            seg = fh.read()
+            prop.update(orch_prompts(seg))
+            prop.update(efca_outcome(seg))
     resp = prop.get("response") or {}
     prop["rca_tool_calls"] = tool_calls((resp.get("rca") or {}).get("raw"))
     prop["validator_tool_calls"] = tool_calls((resp.get("validation") or {}).get("raw"))
@@ -162,11 +201,14 @@ def one(cfg, k, order_index):
                                         "rca_prompt": prop.get("rca_prompt"),
                                         "validator_prompt": prop.get("validator_prompt")})
     rec["reset_after"] = F.reset()
+    infra = bool(INFRA.search(prop.get("error") or ""))
     for cond, res in (("plain", plain), ("proposed", prop)):
-        d = os.path.join(HERE, "runs", cfg, cond)
+        # an attempt lost to a kagent/infrastructure error is kept under attempts/ and rerun
+        d = os.path.join(HERE, "attempts" if infra else "runs", cfg, cond)
         os.makedirs(d, exist_ok=True)
-        json.dump({**rec, "condition": cond, **res}, open(os.path.join(d, f"run{k:02d}.json"), "w"), indent=1)
-    return plain, prop
+        name = f"run{k:02d}_a{attempt}.json" if infra else f"run{k:02d}.json"
+        json.dump({**rec, "condition": cond, **res}, open(os.path.join(d, name), "w"), indent=1)
+    return plain, prop, infra
 
 
 def main():
@@ -183,11 +225,23 @@ def main():
     try:
         for n, (i, c, k) in enumerate(todo, 1):
             t0 = time.time()
-            plain, prop = one(c, k, i)
+            for attempt in range(MAX_ATTEMPTS):
+                plain, prop, infra = one(c, k, i, attempt)
+                if not infra:
+                    break
+                print(f"    {c} r{k} attempt {attempt}: infrastructure error, rerunning: {prop.get('error', '')[:120]}",
+                      flush=True)
+            if infra:  # still failing after MAX_ATTEMPTS: keep the last attempt as the run (a miss)
+                for cond in ("plain", "proposed"):
+                    src = os.path.join(HERE, "attempts", c, cond, f"run{k:02d}_a{attempt}.json")
+                    dst = os.path.join(HERE, "runs", c, cond, f"run{k:02d}.json")
+                    os.makedirs(os.path.dirname(dst), exist_ok=True)
+                    json.dump({**json.load(open(src)), "infra_failed_all_attempts": True}, open(dst, "w"), indent=1)
             print(f"[{n}/{len(todo)}] {c} r{k}: plain {plain['diagnosis_time_s']}s {plain.get('error', 'ok')} | "
                   f"proposed {prop['diagnosis_time_s']}s {prop.get('error', 'ok')} skill={prop['skill_invoked']} "
                   f"tools={len(prop['rca_tool_calls'])}+{len(prop['validator_tool_calls'])} "
-                  f"leaks={len(plain['leak_hits']) + len(prop['leak_hits'])} ({round(time.time() - t0)}s)", flush=True)
+                  f"efca={prop.get('efca')} leaks={len(plain['leak_hits']) + len(prop['leak_hits'])} "
+                  f"attempts={attempt + 1} ({round(time.time() - t0)}s)", flush=True)
     finally:
         print("final reset:", F.reset(), flush=True)
 
