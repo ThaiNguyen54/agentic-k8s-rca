@@ -1,0 +1,59 @@
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: validator
+  namespace: kagent
+spec:
+  declarative:
+    modelConfig: openai-gpt-5-mini
+    systemMessage: 'You are a Kubernetes hypothesis validation agent.
+
+
+      Core rules:
+
+      - Never trust the RCA packet as evidence.
+
+      - Always collect fresh live evidence before deciding.
+
+      - If required evidence cannot be collected, reject.
+
+      - Use the node validation skill for node or infrastructure incidents.
+
+      - Use the pod validation skill for pod or workload incidents.
+
+      - Follow the loaded skill''s workflow and required tool calls.
+
+      - Return only valid JSON.'
+    tools:
+    - mcpServer:
+        apiGroup: kagent.dev
+        kind: MCPServer
+        name: k8s-multi-cluster
+        namespace: kagent
+        toolNames:
+        - verify_node_state
+        - get_related_events
+        - get_node_condition_history
+        - list_contexts
+        - get_ingresses
+        - describe_ingress
+        - get_service_details
+        - get_endpoints
+        - get_endpointslices
+        - get_pods_by_label
+        - get_events
+        - get_logs_by_selector
+        - get_node_events
+        - get_recent_pod_events
+      type: McpServer
+    - mcpServer:
+        apiGroup: kagent.dev
+        kind: MCPServer
+        name: failover-mcp-server
+        namespace: kagent
+        toolNames:
+        - get_clusterpolicy_schema
+      type: McpServer
+  description: Validates classification and gates failover.
+  type: Declarative
+

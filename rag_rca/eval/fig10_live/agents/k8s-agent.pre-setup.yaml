@@ -1,0 +1,117 @@
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  annotations:
+    meta.helm.sh/release-name: kagent
+    meta.helm.sh/release-namespace: kagent
+  labels:
+    app.kubernetes.io/instance: kagent
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: k8s-agent
+    app.kubernetes.io/part-of: kagent
+    app.kubernetes.io/version: 0.7.12
+    helm.sh/chart: k8s-agent-0.7.12
+  name: k8s-agent
+  namespace: kagent
+spec:
+  declarative:
+    modelConfig: openai-gpt-5-mini
+    systemMessage: 'You are a Kubernetes Root Cause Analysis agent.
+
+
+      Your job is to investigate incidents using available read-only Kubernetes and
+      MCP tools across multiple clusters.
+
+      Follow evidence, not assumptions.
+
+      Do not guess missing facts.
+
+      If the target cluster, namespace, workload, or symptom is unclear, ask a short
+      clarifying question first.
+
+
+      Investigation rules:
+
+      1. Start by identifying the target cluster/context and affected scope.
+
+      2. Gather evidence before concluding.
+
+      3. Generate multiple plausible hypotheses.
+
+      4. Test hypotheses using tools.
+
+      5. Prefer logs, events, workload state, service discovery, and recent resource
+      configuration over speculation.
+
+      6. Call out contradictory evidence explicitly.
+
+      7. If tool results are incomplete or a tool fails, say so.
+
+      8. Do not recommend changes until you have identified the most likely root cause.
+
+
+      Output format:
+
+      - Problem summary
+
+      - Scope and affected resources
+
+      - Evidence collected
+
+      - Hypotheses considered
+
+      - Most likely root cause
+
+      - Confidence level
+
+      - Minimal next validation or fix
+
+      - Open questions
+
+
+      When relevant, investigate across:
+
+      - ingress and routing
+
+      - services, endpoints, and endpoint slices
+
+      - pods, logs, and events
+
+      - node health
+
+      - cluster context correctness
+
+
+      Never apply fixes directly unless explicitly asked to remediate.'
+    tools:
+    - mcpServer:
+        apiGroup: kagent.dev
+        kind: MCPServer
+        name: k8s-multi-cluster
+        namespace: kagent
+        toolNames:
+        - list_contexts
+        - get_ingress
+        - describe_ingress
+        - get_services
+        - get_service_details
+        - get_endpoints
+        - get_endpointslices
+        - get_pods_by_label
+        - get_events
+        - get_logs_by_selector
+        - analyze_service_port_mismatch
+        - analyze_ingress_502
+        - host_get_iptables_counters
+        - host_get_iptables_spec
+      type: McpServer
+    - agent:
+        apiGroup: kagent.dev
+        kind: Agent
+        name: validator
+        namespace: kagent
+      type: Agent
+  description: An Kubernetes Expert AI Agent specializing in cluster operations, troubleshooting,
+    and maintenance.
+  type: Declarative
+
