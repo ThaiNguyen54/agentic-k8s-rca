@@ -111,7 +111,17 @@ def reset(timeout=600):
     for kind in ("deployments", "services"):
         # replace (not apply) so env vars and patches added by `kubectl set` are removed
         k("replace", "-f", os.path.join(HERE, "baseline", f"{kind}.json"))
-    return wait_healthy(timeout)
+    first = wait_healthy(timeout)
+    if not first["healthy"]:
+        return first
+    # Fresh pods (no logs or restart counts from earlier faults), then no events:
+    # namespace events live for an hour and would leak earlier faults into the
+    # live evidence of the next run.
+    kn("delete", "pods", "--all", "--wait=true", timeout=300)
+    second = wait_healthy(timeout)
+    kn("delete", "events", "--all")
+    return {**second, "seconds": round(first["seconds"] + second["seconds"], 1), "pods_recreated": True,
+            "events_cleared": True}
 
 
 def health():

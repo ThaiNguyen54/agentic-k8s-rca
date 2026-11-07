@@ -129,3 +129,27 @@ run count or timeout changed.
 Also observed: the RCA agent answered from the embedded evidence without
 calling tools in both smoke runs. This is the agent's own behaviour and is
 recorded per run.
+
+## Second amendment, after 4 full-run injections (2026-11-07)
+The first 4 injections of the full run (1-3 r5, 2-3 r9, 1-3 r0, 1-2 r6) are
+discarded and kept in `discarded_contaminated/`. They are not used in any result.
+
+1. **Cross-run contamination.** Namespace events live for an hour, and pods
+   that the reset did not restart keep their logs. The proposed condition's
+   live evidence therefore carried earlier faults: it blamed a Multus failure in
+   1-2, 1-3 and 2-3, from the smoke test's 3-2 events.
+   - The reset now restores the baseline, deletes every `onlineboutique` pod,
+     waits until healthy, and deletes all namespace events. This takes about
+     2 minutes and is outside diagnosis time.
+2. **Section heading.** The RCA agent often follows its own system-prompt
+   format, so the section can be headed "Most likely root cause" instead of
+   "Primary root cause(s)".
+   - The shared section rule (`../rq1_clean/score_rq1.py`) now also starts at
+     "Most likely root cause" and ends at that format's next headings
+     (confidence, remediation, …).
+   - RQ1's 180 scores are unchanged by this (checked).
+3. **Validator tool permission.** The validator's required
+   `get_clusterpolicy_schema` call failed with Forbidden: the failover MCP
+   service account cannot read the ClusterPolicy CRD. The validator therefore
+   rejected every hypothesis, including ones it said live evidence confirmed.
+   The fix is `rbac-failover-crd.yaml` (get on that one CRD).
